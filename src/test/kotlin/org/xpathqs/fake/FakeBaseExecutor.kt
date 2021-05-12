@@ -10,10 +10,10 @@ open class FakeBaseExecutor : BaseExecutor(FakeDriver()) {
     }
 
     override fun getAttr(selector: BaseSelector, attr: String): String {
-        
+        return ""
     }
 
     override fun getAttrs(selector: BaseSelector, attr: String): Collection<String> {
-        
+        return emptyList()
     }
 }

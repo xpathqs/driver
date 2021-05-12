@@ -10,23 +10,23 @@ class FakeCache : ICache {
     }
 
     override fun isVisible(selector: ISelector): Boolean {
-        
+        return false
     }
 
     override fun isVisible(selectorXpath: String): Boolean {
-        
+        return false
     }
 
     override fun getElementsCount(selectorXpath: String): Int {
-        
+        return 0
     }
 
     override fun getAttribute(selectorXpath: String, attr: String, default: String): String? {
-        
+        return ""
     }
 
     override fun getAttributes(selectorXpath: String, attr: String): List<String> {
-        
+        return emptyList()
     }
 
     override fun clear(clearXml: Boolean) {
