@@ -10,10 +10,10 @@ open class FakeBaseExecutor : BaseExecutor(FakeDriver()) {
     }
 
     override fun getAttr(selector: BaseSelector, attr: String): String {
-        TODO("Not yet implemented")
+        
     }
 
     override fun getAttrs(selector: BaseSelector, attr: String): Collection<String> {
-        TODO("Not yet implemented")
+        
     }
 }

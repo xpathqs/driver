@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 group = "org.xpathqs.xpathqs-driver"
-version = "0.0.1"
+version = "0.0.2"
 
 plugins {
     kotlin("jvm") version "1.5.0"
@@ -16,6 +16,8 @@ plugins {
 java {
     withJavadocJar()
     withSourcesJar()
+    sourceCompatibility = JavaVersion.VERSION_15
+    targetCompatibility = JavaVersion.VERSION_15
 }
 
 jacoco {
@@ -27,8 +29,9 @@ repositories {
 }
 
 dependencies {
+    api("org.xpathqs:xpathqs-core:0.0.1")
+
     implementation(kotlin("stdlib"))
-    implementation("org.xpathqs:xpathqs-core:0.0.1")
 
     testImplementation(kotlin("test-junit5"))
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.6.0")
@@ -44,8 +47,8 @@ publishing {
         }
         create<MavenPublication>("mavenJava") {
             pom {
-                name.set("XpathQS Core")
-                description.set("A library for building Xpath queries in an OOP style")
+                name.set("XpathQS Driver")
+                description.set("Framework for the interaction with drivers for the xpathqs-core")
                 url.set("https://xpathqs.org/")
                 licenses {
                     license {
@@ -68,7 +71,6 @@ publishing {
             }
             groupId = "org.xpathqs"
             artifactId = "xpathqs-driver"
-            version = "0.0.1"
 
             from(components["java"])
         }
@@ -95,7 +97,7 @@ tasks.test {
 }
 
 tasks.withType<KotlinCompile> {
-    kotlinOptions.jvmTarget = "1.8"
+    kotlinOptions.jvmTarget = "15"
 }
 
 tasks.jar {
