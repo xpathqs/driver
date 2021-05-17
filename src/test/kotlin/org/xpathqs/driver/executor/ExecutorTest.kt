@@ -6,14 +6,14 @@ import org.junit.jupiter.api.Test
 import org.xpathqs.core.selector.selector.Selector
 import org.xpathqs.driver.actions.WaitAction
 import org.xpathqs.driver.actions.WaitForSelectorAction
-import org.xpathqs.fake.FakeBaseExecutor
+import org.xpathqs.driver.moke.MkExecutor
 
-internal class BaseExecutorTest {
+internal class ExecutorTest {
 
     @Test
     fun actionHandlerForWaitAction() {
         assertThat(
-            FakeBaseExecutor()
+            MkExecutor()
                 .hasActionHandler(WaitAction())
         ).isEqualTo(true)
     }
@@ -21,7 +21,7 @@ internal class BaseExecutorTest {
     @Test
     fun actionHandlerForWaitSelectorAction() {
         assertThat(
-            FakeBaseExecutor()
+            MkExecutor()
                 .hasActionHandler(
                     WaitForSelectorAction(Selector())
                 )

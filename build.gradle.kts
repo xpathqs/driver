@@ -22,7 +22,7 @@
 
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-version = "0.0.2"
+version = "0.0.3"
 
 plugins {
     kotlin("jvm") version "1.5.0"
@@ -50,7 +50,7 @@ repositories {
 }
 
 dependencies {
-    api("org.xpathqs:xpathqs-core:0.0.1")
+    api("org.xpathqs:xpathqs-core:0.0.2")
 
     implementation(kotlin("stdlib"))
 

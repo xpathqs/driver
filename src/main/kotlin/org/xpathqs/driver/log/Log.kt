@@ -5,6 +5,10 @@ import org.xpathqs.driver.actions.IAction
 object Log : ILog {
     private lateinit var logger: ILog
 
+    init {
+        init(ConsoleLog())
+    }
+
     fun init(logger: ILog) {
         Log.logger = logger
     }

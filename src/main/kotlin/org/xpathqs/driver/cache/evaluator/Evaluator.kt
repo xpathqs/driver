@@ -1,0 +1,25 @@
+package org.xpathqs.driver.cache.evaluator
+
+import org.w3c.dom.Document
+import org.w3c.dom.Node
+import org.w3c.dom.NodeList
+import javax.xml.xpath.XPathConstants
+import javax.xml.xpath.XPathFactory
+
+open class Evaluator(
+    private val doc: Document
+) : IEvaluator {
+    override fun evalNodes(xpath: String): Collection<Node> {
+        val res = ArrayList<Node>()
+        val eval = XPathFactory.newInstance().newXPath()
+        val nodes = eval.evaluate(xpath, doc, XPathConstants.NODESET) as NodeList
+
+        if (nodes.length > 0) {
+            for (i in 0 until nodes.length) {
+                res.add(nodes.item(i))
+            }
+        }
+
+        return res
+    }
+}

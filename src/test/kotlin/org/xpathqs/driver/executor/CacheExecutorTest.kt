@@ -7,14 +7,14 @@ import org.xpathqs.core.selector.selector.Selector
 import org.xpathqs.driver.actions.WaitAction
 import org.xpathqs.driver.actions.WaitForSelectorAction
 import org.xpathqs.driver.actions.WaitForSelectorDisappearAction
-import org.xpathqs.fake.FakeCacheExecutor
+import org.xpathqs.driver.moke.MkCacheExecutor
 
 internal class CacheExecutorTest {
 
     @Test
     fun actionHandlerForWaitAction() {
         assertThat(
-            FakeCacheExecutor()
+            MkCacheExecutor()
                 .hasActionHandler(WaitAction())
         ).isEqualTo(true)
     }
@@ -22,7 +22,7 @@ internal class CacheExecutorTest {
     @Test
     fun actionHandlerForWaitSelectorAction() {
         assertThat(
-            FakeCacheExecutor()
+            MkCacheExecutor()
                 .hasActionHandler(
                     WaitForSelectorAction(Selector())
                 )
@@ -32,7 +32,7 @@ internal class CacheExecutorTest {
     @Test
     fun actionHandlerForWaitSelectorDissapearAction() {
         assertThat(
-            FakeCacheExecutor()
+            MkCacheExecutor()
                 .hasActionHandler(
                     WaitForSelectorDisappearAction(Selector())
                 )

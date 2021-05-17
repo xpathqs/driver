@@ -1,10 +1,10 @@
-package org.xpathqs.fake
+package org.xpathqs.driver.moke
 
 import org.xpathqs.core.selector.base.BaseSelector
 import org.xpathqs.core.selector.base.ISelector
-import org.xpathqs.driver.executor.BaseExecutor
+import org.xpathqs.driver.executor.Executor
 
-open class FakeBaseExecutor : BaseExecutor(FakeDriver()) {
+open class MkExecutor : Executor(MkDriver()) {
     override fun isPresent(selector: ISelector): Boolean {
         return false
     }

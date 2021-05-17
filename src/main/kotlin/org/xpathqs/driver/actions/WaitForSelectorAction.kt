@@ -1,7 +1,7 @@
 package org.xpathqs.driver.actions
 
 import org.xpathqs.core.selector.base.BaseSelector
-import org.xpathqs.driver.const.Global
+import org.xpathqs.driver.constants.Global
 import java.time.Duration
 
 open class WaitForSelectorAction(

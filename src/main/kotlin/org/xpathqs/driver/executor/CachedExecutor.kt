@@ -3,22 +3,21 @@ package org.xpathqs.driver.executor
 import org.xpathqs.core.selector.base.BaseSelector
 import org.xpathqs.core.selector.base.ISelector
 import org.xpathqs.core.selector.selector.Selector
-import org.xpathqs.driver.IDriver
 import org.xpathqs.driver.actions.IAction
 import org.xpathqs.driver.actions.WaitAction
 import org.xpathqs.driver.actions.WaitForSelectorAction
 import org.xpathqs.driver.actions.WaitForSelectorDisappearAction
 import org.xpathqs.driver.cache.ICache
-import org.xpathqs.driver.const.Global
+import org.xpathqs.driver.constants.Global
 import org.xpathqs.driver.extensions.isHidden
 import org.xpathqs.driver.extensions.isVisible
 import org.xpathqs.driver.log.Log
 import java.time.Duration
 
-abstract class CacheExecutor(
-    driver: IDriver,
+open class CachedExecutor(
+    origin: IExecutor,
     private val cache: ICache
-) : BaseExecutor(driver) {
+) : Decorator(origin) {
 
     private val actionHandlerCache = ActionExecMap().apply {
         set(WaitForSelectorAction(Selector()).name) {
@@ -30,21 +29,21 @@ abstract class CacheExecutor(
     }
 
     override fun isPresent(selector: ISelector): Boolean {
-        return cache.isVisible(selector)
+        return cache.isPresent(selector.toXpath())
     }
 
-    fun refreshCache() {
+    protected fun refreshCache() {
         Log.action("Trigger Cache refresh") {
-            cache.setXml(driver.pageSource)
+            cache.update(driver.pageSource)
         }
     }
 
-    private fun executeAction(action: WaitForSelectorAction) {
-        waitHelper({ action.selector.isVisible }, action.timeout)
+    protected open fun executeAction(action: WaitForSelectorAction) {
+        waitHelper({ action.selector.isHidden }, action.timeout)
     }
 
-    private fun executeAction(action: WaitForSelectorDisappearAction) {
-        waitHelper({ action.selector.isHidden }, action.timeout)
+    protected open fun executeAction(action: WaitForSelectorDisappearAction) {
+        waitHelper({ action.selector.isVisible }, action.timeout)
     }
 
     private fun waitHelper(func: () -> Boolean, duration: Duration): Boolean {
@@ -65,18 +64,18 @@ abstract class CacheExecutor(
 
     override fun hasActionHandler(action: IAction): Boolean {
         if (!actionHandlerCache.containsKey(action.name)) {
-            return super.hasActionHandler(action)
+            return origin.hasActionHandler(action)
         }
         return true
     }
 
     override fun getActionHandler(action: IAction): ActionExecLambda {
         return actionHandlerCache[action.name]
-            ?: super.getActionHandler(action)
+            ?: origin.getActionHandler(action)
     }
 
     override fun getAttr(selector: BaseSelector, attr: String): String {
-        return cache.getAttribute(selector.toXpath(), attr) ?: ""
+        return cache.getAttribute(selector.toXpath(), attr)
     }
 
     override fun getAttrs(selector: BaseSelector, attr: String): Collection<String> {

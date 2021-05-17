@@ -17,6 +17,6 @@ class ConsoleLog : ILog {
     }
 
     override fun action(action: IAction) {
-        println("execute action: ${action.name}")
+        println(action.toString())
     }
 }
