@@ -51,7 +51,7 @@ repositories {
 }
 
 dependencies {
-    api("org.xpathqs:xpathqs-core:+")
+    api("org.xpathqs:xpathqs-core:[0.0.4,)")
 
     implementation(kotlin("stdlib"))
 
