@@ -10,7 +10,7 @@ open class InputAction(
 ) : SelectorInteractionAction(to) {
 
     override fun toString(): String {
-        val value = if (to.isSecret()) "******" else text
+        val value = if (to.isSecret() && text.isNotEmpty()) "******" else text
         return "Input '$value' to the ${to.name}"
     }
 }

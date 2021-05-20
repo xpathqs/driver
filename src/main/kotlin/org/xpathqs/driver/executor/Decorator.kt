@@ -40,6 +40,10 @@ open class Decorator(
         return origin.hasActionHandler(action)
     }
 
+    override fun beforeAction(action: IAction) {
+        origin.beforeAction(action)
+    }
+
     override fun getActionHandler(action: IAction): ActionExecLambda {
         return actions[action.name] ?: origin.getActionHandler(action)
     }

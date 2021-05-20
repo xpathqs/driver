@@ -15,11 +15,11 @@ open class MkCache : ICache {
         return 0
     }
 
-    override fun getAttribute(selectorXpath: String, name: String): String {
+    override fun getAttribute(xpath: String, name: String): String {
         return ""
     }
 
-    override fun getAttributes(selectorXpath: String, name: String): List<String> {
+    override fun getAttributes(xpath: String, name: String): List<String> {
         return emptyList()
     }
 

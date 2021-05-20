@@ -4,7 +4,10 @@ import org.xpathqs.core.selector.base.BaseSelector
 import org.xpathqs.core.selector.base.ISelector
 import org.xpathqs.driver.IDriver
 import org.xpathqs.driver.actions.IAction
+import org.xpathqs.driver.actions.SelectorInteractionAction
 import org.xpathqs.driver.actions.WaitAction
+import org.xpathqs.driver.actions.WaitForSelectorAction
+import org.xpathqs.driver.constants.Global
 import org.xpathqs.driver.exceptions.XPathQsException
 import org.xpathqs.driver.log.Log
 
@@ -50,6 +53,15 @@ open class Executor(
     override fun getActionHandler(action: IAction) =
         actions[action.name] ?: throw  XPathQsException.ActionNotFound(action, this)
 
+    override fun beforeAction(action: IAction) {
+        if(action is SelectorInteractionAction) {
+            Log.action("Waiting for Selector before interaction") {
+                Global.executor.execute(
+                    WaitForSelectorAction(action.on)
+                )
+            }
+        }
+    }
 
     protected open fun executeAction(action: WaitAction) {
         Thread.sleep(action.timeout.toMillis())
