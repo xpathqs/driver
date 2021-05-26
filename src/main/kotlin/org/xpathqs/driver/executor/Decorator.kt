@@ -12,12 +12,14 @@ open class Decorator(
 ) : IExecutor {
 
     override fun execute(action: IAction) {
-        if (hasActionHandler(action)) {
-            beforeAction(action)
-            executeConcreteAction(action)
-            afterAction(action)
-        } else {
-            origin.execute(action)
+        Log.action(action) {
+            if (hasActionHandler(action)) {
+                beforeAction(action)
+                executeConcreteAction(action)
+                afterAction(action)
+            } else {
+                origin.execute(action)
+            }
         }
     }
 
@@ -56,7 +58,6 @@ open class Decorator(
 
     protected open fun executeConcreteAction(action: IAction) {
         if (hasActionHandler(action)) {
-            Log.action(action)
             getActionHandler(action).invoke(action)
         } else {
             throw XPathQsException.ActionNotFound(action, this)

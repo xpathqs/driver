@@ -8,12 +8,17 @@ import org.xpathqs.driver.actions.SelectorInteractionAction
 import org.xpathqs.driver.actions.WaitAction
 import org.xpathqs.driver.actions.WaitForSelectorAction
 import org.xpathqs.driver.constants.Global
+import org.xpathqs.driver.constants.Messages
 import org.xpathqs.driver.exceptions.XPathQsException
 import org.xpathqs.driver.log.Log
 
 open class Executor(
     override val driver: IDriver
 ) : IExecutor {
+
+    init {
+        Messages.init()
+    }
 
     override val actions: ActionExecMap = ActionExecMap().apply {
         set(WaitAction().name) {
@@ -28,11 +33,12 @@ open class Executor(
     }
 
     protected open fun executeConcreteAction(action: IAction) {
-        if (hasActionHandler(action)) {
-            Log.action(action)
-            getActionHandler(action).invoke(action)
-        } else {
-            throw XPathQsException.ActionNotFound(action, this)
+        Log.action(action) {
+            if (hasActionHandler(action)) {
+                getActionHandler(action).invoke(action)
+            } else {
+                throw XPathQsException.ActionNotFound(action, this)
+            }
         }
     }
 
@@ -55,10 +61,16 @@ open class Executor(
 
     override fun beforeAction(action: IAction) {
         if(action is SelectorInteractionAction) {
-            Log.action("Waiting for Selector before interaction") {
+            Log.action(
+                String.format(
+                    Messages.Executor.beforeAction,
+                    action.on.name
+                ), "debug"
+            ) {
                 Global.executor.execute(
                     WaitForSelectorAction(action.on)
                 )
+                Log.xpath(action.on)
             }
         }
     }

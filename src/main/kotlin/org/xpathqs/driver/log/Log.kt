@@ -1,31 +1,43 @@
 package org.xpathqs.driver.log
 
+import org.xpathqs.core.selector.base.ISelector
 import org.xpathqs.driver.actions.IAction
+import org.xpathqs.log.TcLogger
+import org.xpathqs.log.annotations.LoggerBridge
 
-object Log : ILog {
-    private lateinit var logger: ILog
+@LoggerBridge
+object Log {
+    var log = TcLogger()
 
-    init {
-        init(ConsoleLog())
+    fun debug(msg: String) {
+        log.debug(msg)
     }
 
-    fun init(logger: ILog) {
-        Log.logger = logger
+    fun trace(msg: String) {
+        log.trace(msg)
     }
 
-    override fun log(msg: String) {
-        logger.log(msg)
+    fun xpath(sel: ISelector) {
+        log.trace("xpath: " + sel.toXpath())
     }
 
-    override fun error(msg: String) {
-        logger.error(msg)
+    fun info(msg: String) {
+        log.info(msg)
     }
 
-    override fun <T> action(msg: String, lambda: () -> T): T {
-        return logger.action(msg, lambda)
+    fun always(msg: String) {
+        log.always(msg)
     }
 
-    override fun action(action: IAction) {
-        logger.action(action)
+    fun error(msg: String) {
+        log.error(msg)
+    }
+
+    fun <T> action(msg: String, tag: String = "action", lambda: () -> T): T {
+        return log.action(msg, tag, lambda = lambda)
+    }
+
+    fun <T> action(action: IAction, tag: String = "action", lambda: () -> T): T {
+        return log.action(action.toString(), tag, lambda = lambda)
     }
 }

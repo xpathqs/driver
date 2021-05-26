@@ -22,7 +22,7 @@
 
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-version = "0.0.4"
+version = "0.0.7"
 
 plugins {
     kotlin("jvm") version "1.5.0"
@@ -37,8 +37,8 @@ plugins {
 java {
     withJavadocJar()
     withSourcesJar()
-    sourceCompatibility = JavaVersion.VERSION_15
-    targetCompatibility = JavaVersion.VERSION_15
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
 }
 
 jacoco {
@@ -51,7 +51,9 @@ repositories {
 }
 
 dependencies {
-    api("org.xpathqs:xpathqs-core:[0.0.4,)")
+    api("org.xpathqs:xpathqs-core:[0.0.5,)")
+    api("org.xpathqs:xpathqs-log:[0.0.1,)")
+    api("org.xpathqs:xpathqs-prop:[0.0.1,)")
 
     implementation(kotlin("stdlib"))
 
@@ -119,7 +121,7 @@ tasks.test {
 }
 
 tasks.withType<KotlinCompile> {
-    kotlinOptions.jvmTarget = "15"
+    kotlinOptions.jvmTarget = "11"
 }
 
 tasks.jar {

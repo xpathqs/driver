@@ -1,0 +1,16 @@
+Messages:
+  Executor:
+    beforeAction: "Ожидание [%s] перед взаимодействием"
+
+  Actions:
+    Click:
+      name: "Нажать"
+      toString: "Нажать на [%s]"
+
+    Input:
+      name: "Ввести"
+      toString: "Ввести '%s' в [%s]"
+
+    WaitForSelector:
+      name: "Ждать Селектор"
+      toString: "Ждать %sсек. селектор [%s]"

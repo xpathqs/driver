@@ -1,0 +1,7 @@
+Messages:
+  Executor:
+    beforeAction: "Waiting for %s before execution"
+
+  Actions:
+    input: "Input '%s' to the %s"
+    click: "Click on %s"

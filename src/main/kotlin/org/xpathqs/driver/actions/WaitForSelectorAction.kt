@@ -2,6 +2,7 @@ package org.xpathqs.driver.actions
 
 import org.xpathqs.core.selector.base.BaseSelector
 import org.xpathqs.driver.constants.Global
+import org.xpathqs.driver.constants.Messages
 import java.time.Duration
 
 open class WaitForSelectorAction(
@@ -11,9 +12,13 @@ open class WaitForSelectorAction(
     constructor(selector: BaseSelector, ms: Long) : this(selector, Duration.ofMillis(ms))
 
     override val name: String
-        get() = "Wait For Selector"
+        get() = Messages.Actions.WaitForSelector.name
 
     override fun toString(): String {
-        return "Wait For $timeout, of: ${selector.name}"
+        return String.format(
+            Messages.Actions.WaitForSelector.toString,
+            timeout.seconds,
+            selector.name
+        )
     }
 }

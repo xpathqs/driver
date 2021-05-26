@@ -22,7 +22,7 @@ open class XmlCache : Cache() {
             Log.error("Page Source can't be empty, something went wrong, unable to continue...")
             return
         } else {
-            Log.log("cache was updated")
+            Log.info("cache was updated")
         }
 
         this.xml = getCleanedXml(xml)
@@ -83,7 +83,7 @@ open class XmlCache : Cache() {
         (evaluator as? CacheEvaluator)?.invalidate()
     }
 
-    fun clearXml() {
+    protected fun clearXml() {
         update(
             """
                 <?xml version="1.0" encoding="UTF-8"?>
