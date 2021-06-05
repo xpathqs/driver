@@ -22,7 +22,7 @@
 
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-version = "0.0.7"
+version = "0.1.0"
 
 plugins {
     kotlin("jvm") version "1.5.0"
@@ -51,9 +51,9 @@ repositories {
 }
 
 dependencies {
-    api("org.xpathqs:xpathqs-core:[0.0.5,)")
-    api("org.xpathqs:xpathqs-log:[0.0.1,)")
-    api("org.xpathqs:xpathqs-prop:[0.0.1,)")
+    api("org.xpathqs:core:0.0.7")
+    api("org.xpathqs:log:0.1.0")
+    api("org.xpathqs:prop:0.1.0")
 
     implementation(kotlin("stdlib"))
 
@@ -88,13 +88,13 @@ publishing {
                     }
                 }
                 scm {
-                    connection.set("scm:git:git://github.com/nachg/xpathqs-driver.git")
-                    developerConnection.set("scm:git:ssh://github.com/nachg/xpathqs-driver.git")
+                    connection.set("scm:git:git://github.com/xpathqs/driver.git")
+                    developerConnection.set("scm:git:ssh://github.com/xpathqs/driver.git")
                     url.set("https://xpathqs.org/")
                 }
             }
             groupId = "org.xpathqs"
-            artifactId = "xpathqs-driver"
+            artifactId = "driver"
 
             from(components["java"])
         }

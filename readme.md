@@ -18,17 +18,17 @@ Apache Maven
 ```xml
 <dependency>
   <groupId>org.xpathqs</groupId>
-  <artifactId>xpathqs-driver</artifactId>
-  <version>0.0.2</version>
+  <artifactId>driver</artifactId>
+  <version>0.1.0</version>
 </dependency>
 ```
 
 Gradle Kotlin DSL
 ```kotlin
-implementation("org.xpathqs:xpathqs-driver:0.0.2")
+implementation("org.xpathqs:driver:0.1.0")
 ```
 
 Gradle Groovy DSL
 ```groovy
-implementation 'org.xpathqs:xpathqs-driver:0.0.2'
+implementation 'org.xpathqs:driver:0.1.7=0'
 ```
