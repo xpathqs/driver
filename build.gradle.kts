@@ -51,7 +51,7 @@ repositories {
 }
 
 dependencies {
-    api("org.xpathqs:core:0.1.1>")
+    api("org.xpathqs:core:0.1.1")
     api("org.xpathqs:log:0.1.1")
     api("org.xpathqs:prop:0.2.0")
 
