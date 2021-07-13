@@ -3,6 +3,7 @@ package org.xpathqs.driver.actions
 import org.xpathqs.core.selector.base.BaseSelector
 import org.xpathqs.driver.constants.Global
 import org.xpathqs.driver.constants.Messages
+import org.xpathqs.log.style.StyledString.Companion.fromDefaultFormatString
 import java.time.Duration
 
 open class WaitForSelectorAction(
@@ -14,11 +15,9 @@ open class WaitForSelectorAction(
     override val name: String
         get() = Messages.Actions.WaitForSelector.name
 
-    override fun toString(): String {
-        return String.format(
+    override fun toStyledString() =
+        fromDefaultFormatString(
             Messages.Actions.WaitForSelector.toString,
-            timeout.seconds,
-            selector.name
+            timeout.seconds.toString() + "s.", selector.name
         )
-    }
 }

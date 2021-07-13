@@ -3,5 +3,5 @@ Messages:
     beforeAction: "Waiting for %s before execution"
 
   Actions:
-    input: "Input '%s' to the %s"
-    click: "Click on %s"
+    input: "Input '%s' to the "
+    click: "Click on "

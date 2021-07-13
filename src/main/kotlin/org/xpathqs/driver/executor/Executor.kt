@@ -11,6 +11,7 @@ import org.xpathqs.driver.constants.Global
 import org.xpathqs.driver.constants.Messages
 import org.xpathqs.driver.exceptions.XPathQsException
 import org.xpathqs.driver.log.Log
+import org.xpathqs.log.style.StyledString
 
 open class Executor(
     override val driver: IDriver
@@ -62,7 +63,7 @@ open class Executor(
     override fun beforeAction(action: IAction) {
         if(action is SelectorInteractionAction) {
             Log.action(
-                String.format(
+                StyledString.fromDefaultFormatString(
                     Messages.Executor.beforeAction,
                     action.on.name
                 ), "debug"

@@ -1,5 +1,6 @@
 package org.xpathqs.driver.actions
 
+import org.xpathqs.log.style.StyledString
 import java.time.Duration
 
 open class WaitAction(

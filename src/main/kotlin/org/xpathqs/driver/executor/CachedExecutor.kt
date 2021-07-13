@@ -3,10 +3,7 @@ package org.xpathqs.driver.executor
 import org.xpathqs.core.selector.base.BaseSelector
 import org.xpathqs.core.selector.base.ISelector
 import org.xpathqs.core.selector.selector.Selector
-import org.xpathqs.driver.actions.IAction
-import org.xpathqs.driver.actions.WaitAction
-import org.xpathqs.driver.actions.WaitForSelectorAction
-import org.xpathqs.driver.actions.WaitForSelectorDisappearAction
+import org.xpathqs.driver.actions.*
 import org.xpathqs.driver.cache.ICache
 import org.xpathqs.driver.constants.Global
 import org.xpathqs.driver.extensions.isHidden
@@ -18,6 +15,8 @@ open class CachedExecutor(
     origin: IExecutor,
     private val cache: ICache
 ) : Decorator(origin) {
+
+    private var needRefreshCache = true
 
     private val actionHandlerCache = ActionExecMap().apply {
         set(WaitForSelectorAction(Selector()).name) {
@@ -75,10 +74,39 @@ open class CachedExecutor(
     }
 
     override fun getAttr(selector: BaseSelector, attr: String): String {
-        return cache.getAttribute(selector.toXpath(), attr)
+        return Log.action("Get '$attr' of '${selector}'") {
+            Log.xpath(selector)
+            checkCache()
+            cache.getAttribute(selector.toXpath(), attr)
+        }
     }
 
     override fun getAttrs(selector: BaseSelector, attr: String): Collection<String> {
-        return cache.getAttributes(selector.toXpath(), attr)
+        return Log.action("Get all '$attr' of '${selector}'") {
+            Log.xpath(selector)
+            checkCache()
+            cache.getAttributes(selector.toXpath(), attr)
+        }
+    }
+
+    protected fun invalidateCache() {
+        Log.trace("Cache marked as invalidated")
+        needRefreshCache = true
+    }
+
+    protected fun checkCache() {
+        if(needRefreshCache) {
+            Log.trace("Cache is invalid, updating...")
+            refreshCache()
+        }
+    }
+
+    override fun afterAction(action: IAction) {
+        super.afterAction(action)
+        if(action is SelectorInteractionAction && action !is WaitAction) {
+            invalidateCache()
+        } else {
+            needRefreshCache = false
+        }
     }
 }

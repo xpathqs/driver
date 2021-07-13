@@ -2,6 +2,7 @@ package org.xpathqs.driver.cache
 
 import org.xpathqs.driver.cache.evaluator.AttributeEvaluator
 import org.xpathqs.driver.cache.evaluator.IEvaluator
+import org.xpathqs.driver.log.Log
 
 abstract class Cache : ICache {
     protected var xml: String = ""
@@ -10,11 +11,9 @@ abstract class Cache : ICache {
     protected lateinit var attributeEvaluator: AttributeEvaluator
 
     override fun isPresent(xpath: String): Boolean {
-        if (xpath.isEmpty()) {
-            return false
-        }
-
-        return evaluator.hasNodes(xpath)
+        val res = xpath.isNotEmpty() && evaluator.hasNodes(xpath)
+        Log.trace("isPresent in cache: $res")
+        return res
     }
 
     override fun getElementsCount(xpath: String) = evaluator.evalNodes(xpath).size

@@ -26,9 +26,9 @@ fun <T : BaseSelector> T.waitForDisappear(duration: Duration = Global.WAIT_FOR_E
     return this
 }
 
-fun <T : BaseSelector> T.click(): T {
+fun <T : BaseSelector> T.click(moveMouse: Boolean = false): T {
     Global.executor.execute(
-        ClickAction(this)
+        ClickAction(this, moveMouse)
     )
     return this
 }
