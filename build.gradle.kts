@@ -22,7 +22,7 @@
 
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-version = "0.1.1"
+version = "0.1.2"
 
 plugins {
     kotlin("jvm") version "1.5.0"
@@ -51,17 +51,23 @@ repositories {
 }
 
 dependencies {
-    api("org.xpathqs:core:0.1.1")
-    api("org.xpathqs:log:0.1.1")
-    api("org.xpathqs:prop:0.2.0")
-
+    api("org.xpathqs:core:0.1.2")
+    api("org.xpathqs:log:0.1.3")
+    api("org.xpathqs:prop:0.2.1")
+    api("org.jgrapht:jgrapht-core:1.5.1")
+    implementation ("org.jetbrains.kotlin:kotlin-reflect:1.5.0")
     implementation(kotlin("stdlib"))
+    implementation("org.jetbrains.kotlin:kotlin-reflect:1.5.0")
+
+    implementation("org.apache.commons:commons-lang3:3.12.0")
+
 
     testImplementation(kotlin("test-junit5"))
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.6.0")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.6.0")
 
     testImplementation("com.willowtreeapps.assertk:assertk-jvm:0.23.1")
+    testImplementation("org.xpathqs:gwt:0.1.1")
 }
 
 publishing {

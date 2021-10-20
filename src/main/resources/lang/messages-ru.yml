@@ -2,6 +2,18 @@ Messages:
   Executor:
     beforeAction: "Ожидание %selector_name перед взаимодействием"
 
+  Cache:
+    isPresent: "Проверка наличия в кэше"
+
+  NavExecutor:
+    beforeAction: "Проверка предусловий для %selector_name перед взаимодействием"
+
+  Navigator:
+    curPage: "Определение текущей страницы"
+    checkPageIteration: "Проверка страницы %selector_name"
+    pageNotFound: "Страница не была определена"
+    pageFound: "Страница найдена"
+
   Actions:
     Click:
       name: "Нажать"

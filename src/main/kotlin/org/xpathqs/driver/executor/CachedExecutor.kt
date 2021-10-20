@@ -28,10 +28,11 @@ open class CachedExecutor(
     }
 
     override fun isPresent(selector: ISelector): Boolean {
+        checkCache()
         return cache.isPresent(selector.toXpath())
     }
 
-    protected fun refreshCache() {
+    fun refreshCache() {
         Log.action("Trigger Cache refresh") {
             cache.update(driver.pageSource)
         }
@@ -71,6 +72,10 @@ open class CachedExecutor(
     override fun getActionHandler(action: IAction): ActionExecLambda {
         return actionHandlerCache[action.name]
             ?: origin.getActionHandler(action)
+    }
+
+    override fun getElementsCount(selector: ISelector): Int {
+        return cache.getElementsCount(selector.toXpath())
     }
 
     override fun getAttr(selector: BaseSelector, attr: String): String {

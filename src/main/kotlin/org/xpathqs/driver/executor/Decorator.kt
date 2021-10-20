@@ -23,6 +23,10 @@ open class Decorator(
         }
     }
 
+    override fun getElementsCount(selector: ISelector): Int {
+        return origin.getElementsCount(selector)
+    }
+
     override fun isPresent(selector: ISelector): Boolean {
         return origin.isPresent(selector)
     }
@@ -44,6 +48,10 @@ open class Decorator(
 
     override fun beforeAction(action: IAction) {
         origin.beforeAction(action)
+    }
+
+    override fun afterAction(action: IAction) {
+        origin.afterAction(action)
     }
 
     override fun getActionHandler(action: IAction): ActionExecLambda {

@@ -1,8 +1,10 @@
 package org.xpathqs.driver.extensions
 
 import org.xpathqs.core.selector.base.BaseSelector
+import org.xpathqs.core.selector.base.ISelector
 import org.xpathqs.driver.actions.*
 import org.xpathqs.driver.constants.Global
+import org.xpathqs.driver.page.Page
 import org.xpathqs.driver.selector.SecretInput
 import java.time.Duration
 
@@ -58,4 +60,18 @@ fun <T : BaseSelector> T.getAttr(name: String) =
 
 fun <T : BaseSelector> T.isSecret(): Boolean {
     return this is SecretInput
+}
+
+fun <T : BaseSelector> T.makeVisible(): T {
+    Global.executor.execute(
+        MakeVisibleAction(this)
+    )
+    return this
+}
+
+fun <T : BaseSelector> T.screenshot(boundRect: Boolean=true): T {
+    Global.executor.execute(
+        ScreenShotAction(this, boundRect)
+    )
+    return this
 }

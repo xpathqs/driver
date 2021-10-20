@@ -33,6 +33,10 @@ open class Executor(
         afterAction(action)
     }
 
+    override fun getElementsCount(selector: ISelector): Int {
+        return 0
+    }
+
     protected open fun executeConcreteAction(action: IAction) {
         Log.action(action) {
             if (hasActionHandler(action)) {

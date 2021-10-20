@@ -4,6 +4,7 @@ import org.xpathqs.core.selector.base.ISelector
 import org.xpathqs.driver.actions.IAction
 import org.xpathqs.log.BaseLogger
 import org.xpathqs.log.annotations.LoggerBridge
+import org.xpathqs.log.message.decorators.AttachmentMessage
 import org.xpathqs.log.style.StyleFactory
 import org.xpathqs.log.style.StyledBlock
 import org.xpathqs.log.style.StyledString
@@ -11,6 +12,12 @@ import org.xpathqs.log.style.StyledString
 @LoggerBridge
 object Log {
     var log = BaseLogger()
+
+    fun tag(msg: String, tag: String = "") = tag(StyledBlock(msg), tag)
+    fun tag(msg: StyledBlock, tag: String = "") = tag(StyledString(msg), tag)
+    fun tag(msg: StyledString, tag: String = "") {
+        log.tag(msg, tag)
+    }
 
     fun debug(msg: String) = debug(StyledBlock(msg))
     fun debug(msg: StyledBlock) = debug(StyledString(msg))
@@ -23,12 +30,27 @@ object Log {
     fun trace(msg: StyledString) {
         log.trace(msg)
     }
-
-    fun xpath(sel: ISelector) {
-        if(sel.name.isNotEmpty()) {
-            log.trace(StyleFactory.text( "xpath: ") + StyleFactory.xpath(sel.xpath))
-        }
+    fun <T> traceResult(msg: StyledString, lambda: () -> T): T {
+        val res = lambda()
+        trace(msg + StyleFactory.result(" $res"))
+        return res
     }
+
+    fun warning(msg: String) = warning(StyleFactory.warning(msg))
+    fun warning(msg: StyledBlock) = warning(StyledString(msg))
+    fun warning(msg: StyledString) {
+        log.trace(msg)
+    }
+
+    fun result(msg: String) = result(StyleFactory.result(msg))
+    fun result(msg: StyledBlock) = result(StyledString(msg))
+    fun result(msg: StyledString) {
+        log.trace(msg)
+    }
+
+    fun xpath(sel: ISelector) = xpath(sel.xpath)
+    fun xpath(xpath: String) =
+        log.trace(StyleFactory.text( "xpath: ") + StyleFactory.xpath(xpath))
 
     fun info(msg: String) = info(StyledBlock(msg))
     fun info(msg: StyledBlock) = info(StyledString(msg))
@@ -42,14 +64,20 @@ object Log {
         log.always(msg)
     }
 
-    fun error(msg: String) = error(StyledBlock(msg))
+    fun error(msg: String) = error(StyleFactory.error(msg))
     fun error(msg: StyledBlock) = error(StyledString(msg))
     fun error(msg: StyledString) {
         log.error(msg)
     }
 
-    fun addAttachment(value: String, type: String, data: Any) {
+    fun attachment(value: String, type: String, data: Any) {
         log.addAttachment(value, type, data)
+    }
+
+    fun attachment(data: Array<Byte>, msg: String="", tag: String="") = attachment(data, StyledBlock(msg), tag)
+    fun attachment(data: Array<Byte>, msg: StyledBlock, tag: String="") = attachment(data, StyledString(msg), tag)
+    fun attachment(data: Array<Byte>, msg: StyledString, tag: String="") {
+        log.attachment(data, msg, tag)
     }
 
     fun <T> action(msg: String, tag: String = "action", lambda: () -> T) = action(StyledBlock(msg), tag, lambda)

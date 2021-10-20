@@ -2,7 +2,9 @@ package org.xpathqs.driver.cache
 
 import org.xpathqs.driver.cache.evaluator.AttributeEvaluator
 import org.xpathqs.driver.cache.evaluator.IEvaluator
+import org.xpathqs.driver.constants.Messages
 import org.xpathqs.driver.log.Log
+import org.xpathqs.log.style.StyleFactory
 
 abstract class Cache : ICache {
     protected var xml: String = ""
@@ -11,9 +13,12 @@ abstract class Cache : ICache {
     protected lateinit var attributeEvaluator: AttributeEvaluator
 
     override fun isPresent(xpath: String): Boolean {
-        val res = xpath.isNotEmpty() && evaluator.hasNodes(xpath)
-        Log.trace("isPresent in cache: $res")
-        return res
+        return Log.traceResult(
+            StyleFactory.text(Messages.Cache.isPresent)
+                + StyleFactory.xpath(xpath)
+        ) {
+            xpath.isNotEmpty() && evaluator.hasNodes(xpath)
+        }
     }
 
     override fun getElementsCount(xpath: String) = evaluator.evalNodes(xpath).size
