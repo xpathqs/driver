@@ -12,6 +12,7 @@ import org.xpathqs.core.selector.extensions.parents
 import org.xpathqs.core.selector.extensions.rootParent
 import org.xpathqs.core.selector.extensions.simpleName
 import org.xpathqs.core.selector.extensions.text
+import org.xpathqs.driver.exceptions.XPathQsException
 import org.xpathqs.driver.extensions.click
 import org.xpathqs.driver.extensions.input
 import org.xpathqs.driver.extensions.isHidden
@@ -287,6 +288,8 @@ open class IBaseModel(
                 allProperties(v)
             )
         }
+
+        if(res.isEmpty()) throw XPathQsException.ModelDoesntHaveMutableProps(this)
 
         return res
     }

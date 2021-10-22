@@ -3,6 +3,7 @@ package org.xpathqs.driver.exceptions
 import org.xpathqs.driver.actions.IAction
 import org.xpathqs.driver.executor.IExecutor
 import org.xpathqs.driver.page.Page
+import org.xpathqs.driver.widgets.IBaseModel
 
 open class XPathQsException(
     msg: String
@@ -24,5 +25,9 @@ open class XPathQsException(
 
     class NoModelForThePage(page: Page) : XPathQsException (
         msg = "$page doesn't have a model"
+    )
+
+    class ModelDoesntHaveMutableProps(model: IBaseModel) : XPathQsException (
+        msg = "${model::class.simpleName} doesn't have a mutable (var) properties"
     )
 }
