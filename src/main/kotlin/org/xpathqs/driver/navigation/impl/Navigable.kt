@@ -19,9 +19,11 @@ open class Navigable(
     protected val selectorNavigator: IBlockSelectorNavigation
         = ModelStateSelectorNavigation(
             ModelStateParentNavigation(
-                FormSelectorValidationErrorNavigation(
-                    TriggerModelNavigation(
-                        BlockSelectorNavigationImpl()
+                FormSelectorSelectOptionNavigation(
+                    FormSelectorValidationErrorNavigation(
+                        TriggerModelNavigation(
+                            BlockSelectorNavigationImpl()
+                        )
                     )
                 )
             )

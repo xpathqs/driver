@@ -1,10 +1,15 @@
 package org.xpathqs.driver.extensions
 
+import org.xpathqs.core.reflection.freeze
 import org.xpathqs.core.selector.base.BaseSelector
 import org.xpathqs.core.selector.base.ISelector
+import org.xpathqs.core.selector.extensions.core.clone
+import org.xpathqs.core.selector.selector.Selector
 import org.xpathqs.driver.actions.*
 import org.xpathqs.driver.constants.Global
+import org.xpathqs.driver.executor.CachedExecutor
 import org.xpathqs.driver.page.Page
+import org.xpathqs.driver.selector.NearSelector
 import org.xpathqs.driver.selector.SecretInput
 import java.time.Duration
 
@@ -17,6 +22,24 @@ val <T : BaseSelector> T.isHidden: Boolean
 fun <T : BaseSelector> T.waitForVisible(duration: Duration = Global.WAIT_FOR_ELEMENT_TIMEOUT): T {
     Global.executor.execute(
         WaitForSelectorAction(this, duration)
+    )
+    return this
+}
+
+fun <T : BaseSelector> T.waitForElementsCount(
+    count: Int = -1,
+    moreThen: Int = -1,
+    lessThen: Int = -1,
+    duration: Duration = Global.WAIT_FOR_ELEMENT_TIMEOUT
+): T {
+    Global.executor.execute(
+        WaitForSelectorCountAction(
+            this,
+            expected = count,
+            moreThen = moreThen,
+            lessThen = lessThen,
+            timeout = duration
+        )
     )
     return this
 }
@@ -58,6 +81,9 @@ val <T : BaseSelector> T.value: String
 fun <T : BaseSelector> T.getAttr(name: String) =
     Global.executor.getAttr(this, name)
 
+val <T : BaseSelector> T.count: Int
+    get() = Global.executor.getElementsCount(this)
+
 fun <T : BaseSelector> T.isSecret(): Boolean {
     return this is SecretInput
 }
@@ -74,4 +100,11 @@ fun <T : BaseSelector> T.screenshot(boundRect: Boolean=true): T {
         ScreenShotAction(this, boundRect)
     )
     return this
+}
+
+infix fun <T : BaseSelector> T.near(sel: Selector): NearSelector {
+    //if(Global.executor is CachedExecutor) {
+        return NearSelector((Global.executor as CachedExecutor).cache, this.clone().freeze(), sel.clone().freeze())
+    //}
+   // throw Exception("Near works only for CachedExecutors")
 }

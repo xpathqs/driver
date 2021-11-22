@@ -25,6 +25,8 @@ interface IExecutor {
     fun hasActionHandler(action: IAction): Boolean
     fun getActionHandler(action: IAction): ActionExecLambda
 
+    fun onPostCreate() {}
+
     val driver: IDriver
     val actions: ActionExecMap
 }

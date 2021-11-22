@@ -6,6 +6,7 @@ import org.xpathqs.core.selector.selector.Selector
 import org.xpathqs.driver.actions.*
 import org.xpathqs.driver.cache.ICache
 import org.xpathqs.driver.constants.Global
+import org.xpathqs.driver.extensions.count
 import org.xpathqs.driver.extensions.isHidden
 import org.xpathqs.driver.extensions.isVisible
 import org.xpathqs.driver.log.Log
@@ -13,7 +14,7 @@ import java.time.Duration
 
 open class CachedExecutor(
     origin: IExecutor,
-    private val cache: ICache
+    val cache: ICache
 ) : Decorator(origin) {
 
     private var needRefreshCache = true
@@ -25,6 +26,9 @@ open class CachedExecutor(
         set(WaitForSelectorDisappearAction(Selector()).name) {
             executeAction(it as WaitForSelectorDisappearAction)
         }
+        set(WaitForSelectorCountAction(Selector(), 0).name) {
+            executeAction(it as WaitForSelectorCountAction)
+        }
     }
 
     override fun isPresent(selector: ISelector): Boolean {
@@ -32,9 +36,10 @@ open class CachedExecutor(
         return cache.isPresent(selector.toXpath())
     }
 
-    fun refreshCache() {
+    open fun refreshCache() {
         Log.action("Trigger Cache refresh") {
             cache.update(driver.pageSource)
+            needRefreshCache = false
         }
     }
 
@@ -44,6 +49,14 @@ open class CachedExecutor(
 
     protected open fun executeAction(action: WaitForSelectorDisappearAction) {
         waitHelper({ action.selector.isVisible }, action.timeout)
+    }
+
+    protected open fun executeAction(action: WaitForSelectorCountAction) {
+        waitHelper({
+            val c = action.selector.count
+            Log.trace("${action.selector.name} count: $c")
+            !action.isWaitCompleted(c)
+        }, action.timeout)
     }
 
     private fun waitHelper(func: () -> Boolean, duration: Duration): Boolean {
@@ -94,12 +107,12 @@ open class CachedExecutor(
         }
     }
 
-    protected fun invalidateCache() {
+    protected open fun invalidateCache() {
         Log.trace("Cache marked as invalidated")
         needRefreshCache = true
     }
 
-    protected fun checkCache() {
+    protected open fun checkCache() {
         if(needRefreshCache) {
             Log.trace("Cache is invalid, updating...")
             refreshCache()

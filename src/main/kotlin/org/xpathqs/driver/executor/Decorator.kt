@@ -54,6 +54,10 @@ open class Decorator(
         origin.afterAction(action)
     }
 
+    override fun onPostCreate() {
+        origin.onPostCreate()
+    }
+
     override fun getActionHandler(action: IAction): ActionExecLambda {
         return actions[action.name] ?: origin.getActionHandler(action)
     }

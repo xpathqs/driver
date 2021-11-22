@@ -34,7 +34,7 @@ open class Navigator {
     fun register(page: INavigable) {
         page as ISelector
         if(!pages.contains(page)) {
-            Log.info(selectorName(page.name) + " was added to the " + keyword("Navigator"))
+            Log.info(selectorName(page.name) + " was added to the " + keyword(this::class.simpleName!!))
             if(page is Page && page is INavigableDetermination) {
                 pages.add(page)
             } else if(page is Block) {

@@ -4,6 +4,9 @@ import org.xpathqs.core.selector.base.findAnnotation
 import org.xpathqs.core.selector.base.hasAnnotation
 import org.xpathqs.core.selector.block.Block
 import org.xpathqs.core.selector.block.allInnerSelectors
+import org.xpathqs.driver.actions.ClickAction
+import org.xpathqs.driver.actions.SwitchTabAction
+import org.xpathqs.driver.constants.Global
 import org.xpathqs.driver.exceptions.XPathQsException
 import org.xpathqs.driver.extensions.click
 import org.xpathqs.driver.navigation.annotations.UI
@@ -42,6 +45,11 @@ class NavigationParser(
                     to = ann.byClick.objectInstance!! as INavigable
                 ) {
                     it.click()
+                    if(ann.switchTab) {
+                        Global.executor.execute(
+                            SwitchTabAction()
+                        )
+                    }
                 }
             }
         }

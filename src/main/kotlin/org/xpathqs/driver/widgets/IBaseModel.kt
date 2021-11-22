@@ -4,7 +4,6 @@ import org.apache.commons.lang3.ClassUtils
 import org.xpathqs.core.selector.base.BaseSelector
 import org.xpathqs.core.selector.base.findAnnotation
 import org.xpathqs.core.selector.base.findParentWithAnnotation
-import org.xpathqs.core.selector.base.hasAnnotation
 import org.xpathqs.core.selector.block.Block
 import org.xpathqs.core.selector.block.allInnerSelectors
 import org.xpathqs.core.selector.block.findWithAnnotation
@@ -24,6 +23,7 @@ import kotlin.properties.Delegates
 import kotlin.reflect.KClass
 import kotlin.reflect.KMutableProperty
 import kotlin.reflect.KProperty
+import kotlin.reflect.full.createInstance
 import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.memberProperties
@@ -34,15 +34,24 @@ import kotlin.reflect.jvm.jvmName
 open class IBaseModel(
     private val view: Block? = null
 ) {
-    open val mappings: Map<KProperty<*>, BaseSelector>
+    open val mappings: LinkedHashMap<KProperty<*>, BaseSelector>
         by lazy {
-            reflectionMappings + propArgsMappings
+            val res = LinkedHashMap<KProperty<*>, BaseSelector>()
+            res.putAll(reflectionMappings)
+            res.putAll(propArgsMappings)
+
+            res
         }
 
-    open val reflectionMappings: Map<KProperty<*>, BaseSelector>
+    open val reflectionMappings: LinkedHashMap<KProperty<*>, BaseSelector>
         by lazy {
-            val res = HashMap<KProperty<*>, BaseSelector>()
-            this::class.declaredMemberProperties.forEach { p ->
+            val res = LinkedHashMap<KProperty<*>, BaseSelector>()
+
+            val c = this::class.java.declaredFields
+            val orderById = c.withIndex().associate { it.value.name to it.index }
+            val p = this::class.declaredMemberProperties
+            val sorted = p.sortedBy { orderById[it.name] }
+            sorted.forEach { p ->
                 view?.allInnerSelectors?.find { it.simpleName == p.name }?.let { s ->
                     res[p] = s
                 }
@@ -50,7 +59,7 @@ open class IBaseModel(
             res
         }
 
-    open val propArgsMappings: Map<KProperty<*>, BaseSelector>
+    open val propArgsMappings: LinkedHashMap<KProperty<*>, BaseSelector>
         by lazy {
             val before = isInit.get()
             isInit.set(false)
@@ -65,7 +74,7 @@ open class IBaseModel(
             lazyPropMap
         }
 
-    private val lazyPropMap = HashMap<KProperty<*>, BaseSelector>()
+    private val lazyPropMap = LinkedHashMap<KProperty<*>, BaseSelector>()
 
     open val states: Map<Int, IBaseModel>
         get() = emptyMap()
@@ -80,20 +89,25 @@ open class IBaseModel(
             (it as? Block)?.findWithAnnotation(ann) ?: it.findParentWithAnnotation(ann)
         }?.first()
 
-    fun submit() {
+    open fun beforeSubmit() {}
+    open fun afterSubmit() {}
+
+    open fun submit() {
       //  if(!propTrig) {
             fill()
       //  }
+        beforeSubmit()
         findWidget(UI.Widgets.Submit::class)?.click()
+        afterSubmit()
     }
 
-    fun reset() {
+    open fun reset() {
         mappings.keys.forEach {
             (it as KMutableProperty<*>).setter.call(this, "")
         }
     }
 
-    fun invalidate(sel: BaseSelector) {
+    open fun invalidate(sel: BaseSelector) {
         val prop = findPropBySel(sel)!!
         val ann = prop.findAnnotation<Validation>()
         if (ann == null) {
@@ -126,13 +140,29 @@ open class IBaseModel(
         }
     }
 
-    fun fill(prop: KMutableProperty<*>) {
+    open fun fill(prop: KMutableProperty<*>) {
         val parent = findParent(this, prop)
         val v = prop.getter.call(parent)
-        prop.setter.call(parent, v)
+
+        if(prop.isPrimitive && v != null) {
+            val sel = mappings.filterKeys { it.name == prop.name }.values.first()
+            Log.action("Selector ${sel.name} was found, calling input") {
+                if (sel is IFormInput) {
+                    if(v is String && v.isEmpty()) {
+                        sel.clear()
+                    } else {
+                        sel.input(v.toString())
+                    }
+                } else {
+                    sel.input(v.toString())
+                }
+            }
+        } else {
+            prop.setter.call(parent, v)
+        }
     }
 
-    fun fill() {
+    open fun fill() {
         if(this is IOrderedSteps) {
             evalActions(steps)
         } else {
@@ -176,7 +206,7 @@ open class IBaseModel(
         }.values.first()
     }
 
-    fun submit(state: Int) {
+    open fun submit(state: Int) {
         if(state == DEFAULT) {
             submit()
         } else {
@@ -187,7 +217,7 @@ open class IBaseModel(
         }
     }
 
-    fun submit(page: INavigable) {
+    open fun submit(page: INavigable) {
         if(this is IOrderedSteps) {
             val stepsToSubmit = ArrayList<InputAction>()
             steps.forEach { action ->
@@ -209,7 +239,6 @@ open class IBaseModel(
 
     fun findSelByProp(prop: KProperty<*>) =
         mappings.filterKeys { it.name == prop.name }.values.first()
-
 
     fun findPropBySel(sel: BaseSelector): KProperty<*>? {
         val res = mappings.filterValues {
@@ -289,9 +318,12 @@ open class IBaseModel(
             )
         }
 
-        if(res.isEmpty()) throw XPathQsException.ModelDoesntHaveMutableProps(this)
+        if (res.isEmpty()) throw XPathQsException.ModelDoesntHaveMutableProps(this)
 
-        return res
+        val c = this::class.java.declaredFields
+        val orderById = c.withIndex().associate { it.value.name to it.index }
+
+        return res.sortedBy { orderById[it.name] }
     }
 
     inner class FieldsCls {
@@ -410,14 +442,14 @@ open class IBaseModel(
 
 val KProperty<*>.isPrimitive: Boolean
     get() {
-        return this.name.endsWith("String") || ClassUtils.isPrimitiveOrWrapper(this.javaClass)
+        return this.returnType.toString().endsWith("String") || ClassUtils.isPrimitiveOrWrapper(this.javaClass)
     }
 
 fun <T : Any> T.clone() :T {
     val before = IBaseModel.isInit.get()
     IBaseModel.isInit.set(false)
 
-    val res = this::class.constructors.find { it.parameters.isEmpty() }!!.call()
+    val res = this::class.createInstance()
     res.copyProps(this)
 
     val props = this::class.memberProperties.filter {

@@ -21,11 +21,8 @@ import org.xpathqs.driver.extensions.makeVisible
 import org.xpathqs.driver.log.Log
 import org.xpathqs.driver.navigation.annotations.NavOrderType
 import org.xpathqs.driver.navigation.annotations.UI
-import org.xpathqs.driver.navigation.base.IBlockSelectorNavigation
-import org.xpathqs.driver.navigation.base.ILoadable
-import org.xpathqs.driver.navigation.base.INavigable
+import org.xpathqs.driver.navigation.base.*
 import org.xpathqs.driver.page.Page
-import org.xpathqs.driver.navigation.base.INavigableDetermination
 import java.time.Duration
 
 open class NavExecutor(
@@ -44,17 +41,16 @@ open class NavExecutor(
 
     override fun beforeAction(action: IAction) {
         if(action is SelectorInteractionAction) {
-            if(action.on.isVisible) {
-                Log.info("Элемент видим")
-                return
-            }
             Log.action(Messages.NavExecutor.beforeAction(action)) {
             //    val ann = (action.on.rootParent as? BaseSelector)?.findAnnotation<NavOrder>()
 
                 val curPage = navigator.currentPage
                 val sourcePage = action.on.rootParent as? INavigable
 
-                if(sourcePage != null && curPage != sourcePage) {
+                val blockIsVisible = (sourcePage !is Page
+                    && (sourcePage as? INavigableDetermination)?.isVisible == true)
+
+                if(sourcePage != null && curPage != sourcePage && !blockIsVisible) {
                     Log.action("Необходима навигация") {
                         val navigations = navigator.findPath(curPage, sourcePage)
                             ?: throw XPathQsException.NoNavigation()
@@ -98,6 +94,9 @@ open class NavExecutor(
 
     protected fun executeAction(action: MakeVisibleAction) {
     //    beforeAction(action)
+       /* if(action.on.rootParent is INavigableDetermination) {
+
+        }*/
     }
 
     override fun getAttr(selector: BaseSelector, attr: String): String {

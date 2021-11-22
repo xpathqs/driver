@@ -35,6 +35,20 @@ class UI {
             AnnotationTarget.FIELD
         )
         @Retention(AnnotationRetention.RUNTIME)
+        annotation class Select
+
+        @Target(
+            AnnotationTarget.CLASS,
+            AnnotationTarget.FIELD
+        )
+        @Retention(AnnotationRetention.RUNTIME)
+        annotation class OptionItem
+
+        @Target(
+            AnnotationTarget.CLASS,
+            AnnotationTarget.FIELD
+        )
+        @Retention(AnnotationRetention.RUNTIME)
         annotation class ValidationError
 
         @Target(
@@ -90,7 +104,8 @@ class UI {
             val bySubmit: KClass<out Block> = Block::class,
             val value: String = "",
             val weight: Int = UNDEF,
-            vararg val contains: KClass<out Block> = []
+            vararg val contains: KClass<out Block> = [],
+            val switchTab: Boolean = false
         ) {
             companion object {
                 const val UNDEF = -1

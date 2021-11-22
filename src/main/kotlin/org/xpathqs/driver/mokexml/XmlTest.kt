@@ -1,7 +1,5 @@
 package org.xpathqs.driver.mokexml
 
-import org.xpathqs.core.reflection.scanPackage
-import org.xpathqs.core.selector.base.BaseSelector
 import org.xpathqs.core.selector.base.ISelector
 import org.xpathqs.driver.cache.Cache
 import org.xpathqs.driver.cache.XmlCache
@@ -23,21 +21,26 @@ import org.xpathqs.log.style.StyledString
 
 open class XmlTest(
     resource: String,
-    cache: Cache = XmlCache(),
+    private val cache: Cache = XmlCache(),
     val navigator: Navigator = Navigator()
 ) {
-    val executor: IExecutor
+    protected lateinit var executor: IExecutor
 
     fun getResourceAsText(path: String): String {
         return this::class.java.classLoader.getResource(path).readText()
     }
 
     init {
-        val xml = getResourceAsText(resource)
+        refreshCache(resource)
+        initLog()
+        Log.info("Finish init log")
+    }
+
+    fun refreshCache(path: String) {
+        val xml = getResourceAsText(path)
         executor = MockCachedExecutor(xml, cache)
         navigator.init(executor)
         org.xpathqs.driver.constants.Global.executor = executor
-        initLog()
     }
 
     open protected fun initLog() {

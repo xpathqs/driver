@@ -17,7 +17,7 @@ open class Executor(
     override val driver: IDriver
 ) : IExecutor {
 
-    init {
+    override fun onPostCreate() {
         Messages.init()
     }
 
