@@ -7,7 +7,7 @@ import org.xpathqs.log.style.StyleFactory
 import org.xpathqs.log.style.StyledString
 
 open class InputAction(
-    val text: String,
+    var text: String,
     val to: BaseSelector,
     val clearBeforeInput: Boolean = true
 ) : SelectorInteractionAction(to) {

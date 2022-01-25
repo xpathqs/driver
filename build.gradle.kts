@@ -22,7 +22,7 @@
 
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-version = "0.1.2"
+version = "0.1.3"
 
 plugins {
     kotlin("jvm") version "1.5.0"
@@ -51,7 +51,7 @@ repositories {
 }
 
 dependencies {
-    api("org.xpathqs:core:0.1.2")
+    api("org.xpathqs:core:0.1.3")
     api("org.xpathqs:log:0.1.3")
     api("org.xpathqs:prop:0.2.1")
     api("org.jgrapht:jgrapht-core:1.5.1")

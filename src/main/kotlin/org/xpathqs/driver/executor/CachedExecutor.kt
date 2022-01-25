@@ -23,6 +23,9 @@ open class CachedExecutor(
         set(WaitForSelectorAction(Selector()).name) {
             executeAction(it as WaitForSelectorAction)
         }
+        set(WaitForFirstSelectorAction(listOf(Selector())).name) {
+            executeAction(it as WaitForFirstSelectorAction)
+        }
         set(WaitForSelectorDisappearAction(Selector()).name) {
             executeAction(it as WaitForSelectorDisappearAction)
         }
@@ -45,6 +48,18 @@ open class CachedExecutor(
 
     protected open fun executeAction(action: WaitForSelectorAction) {
         waitHelper({ action.selector.isHidden }, action.timeout)
+    }
+
+    protected open fun executeAction(action: WaitForFirstSelectorAction) {
+        Log.action("WaitForFirstSelectorAction") {
+            waitHelper({
+                action.selectors.find {
+                    Log.info("${it.name} isVisible: ${it.isVisible}")
+                    it.isVisible
+                } == null
+            }, action.timeout
+            )
+        }
     }
 
     protected open fun executeAction(action: WaitForSelectorDisappearAction) {

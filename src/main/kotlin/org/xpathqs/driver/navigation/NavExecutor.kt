@@ -52,6 +52,9 @@ open class NavExecutor(
 
                 if(sourcePage != null && curPage != sourcePage && !blockIsVisible) {
                     Log.action("Необходима навигация") {
+                        Log.info("Navigator: $navigator")
+                        Log.info("Executor: $this")
+                        Log.info("Driver: ${this.driver}")
                         val navigations = navigator.findPath(curPage, sourcePage)
                             ?: throw XPathQsException.NoNavigation()
 

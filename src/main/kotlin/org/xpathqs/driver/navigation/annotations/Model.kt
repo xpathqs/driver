@@ -3,6 +3,29 @@ package org.xpathqs.driver.navigation.annotations
 class Model {
     class Validation
 
+    class DataTypes {
+        @Target(
+            AnnotationTarget.FIELD,
+            AnnotationTarget.PROPERTY,
+        )
+        @Retention(AnnotationRetention.RUNTIME)
+        annotation class Date
+
+        @Target(
+            AnnotationTarget.FIELD,
+            AnnotationTarget.PROPERTY,
+        )
+        @Retention(AnnotationRetention.RUNTIME)
+        annotation class Currency
+
+        @Target(
+            AnnotationTarget.FIELD,
+            AnnotationTarget.PROPERTY,
+        )
+        @Retention(AnnotationRetention.RUNTIME)
+        annotation class Ignore
+    }
+
     @Target(
         AnnotationTarget.CLASS,
         AnnotationTarget.FIELD

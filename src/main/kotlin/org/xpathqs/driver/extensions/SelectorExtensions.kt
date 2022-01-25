@@ -11,6 +11,7 @@ import org.xpathqs.driver.executor.CachedExecutor
 import org.xpathqs.driver.page.Page
 import org.xpathqs.driver.selector.NearSelector
 import org.xpathqs.driver.selector.SecretInput
+import java.lang.Exception
 import java.time.Duration
 
 val <T : BaseSelector> T.isVisible
@@ -24,6 +25,12 @@ fun <T : BaseSelector> T.waitForVisible(duration: Duration = Global.WAIT_FOR_ELE
         WaitForSelectorAction(this, duration)
     )
     return this
+}
+
+fun <T : BaseSelector> Collection<T>.waitForFirstVisibleOf(duration: Duration = Global.WAIT_FOR_ELEMENT_TIMEOUT) {
+    Global.executor.execute(
+        WaitForFirstSelectorAction(this, duration)
+    )
 }
 
 fun <T : BaseSelector> T.waitForElementsCount(
@@ -65,6 +72,13 @@ fun <T : BaseSelector> T.input(value: String, clear: Boolean = true): T {
     return this
 }
 
+fun <T : BaseSelector> T.file(value: String): T {
+    Global.executor.execute(
+        InputFileAction(value, this)
+    )
+    return this
+}
+
 fun <T : BaseSelector> T.clear(): T {
     Global.executor.execute(
         ClearAction(this)
@@ -77,6 +91,20 @@ val <T : BaseSelector> T.text: String
 
 val <T : BaseSelector> T.value: String
     get() = getAttr("value")
+
+val <T : BaseSelector> T.cls: String
+    get() = getAttr("class")
+
+val <T : BaseSelector> T.isChecked: Boolean
+    get() {
+    return return try {
+        getAttr("checked")
+        true
+    } catch (e: Exception) {
+        false
+    }
+}
+
 
 fun <T : BaseSelector> T.getAttr(name: String) =
     Global.executor.getAttr(this, name)

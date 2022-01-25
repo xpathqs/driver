@@ -16,6 +16,8 @@ interface IModelBlock<T: IBaseModel> {
         val m = invoke()
         return m.states[state] as? T ?: m
     }
+
+    open fun getFromUi() = invoke()
 }
 
 val Block.model: IBaseModel?

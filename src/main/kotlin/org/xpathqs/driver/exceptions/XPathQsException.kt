@@ -20,7 +20,7 @@ open class XPathQsException(
     )
 
     class NoNavigation : XPathQsException (
-        msg = "No Navigation"
+        msg = "No Navigation [${Thread.currentThread()}]"
     )
 
     class NoModelForThePage(page: Page) : XPathQsException (

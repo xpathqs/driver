@@ -1,4 +1,4 @@
-package org.xpathqs.driver
+package org.xpathqs.driver.core
 
 import org.xpathqs.core.selector.base.ISelector
 

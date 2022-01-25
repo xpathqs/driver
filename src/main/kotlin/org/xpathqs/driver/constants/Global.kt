@@ -20,7 +20,10 @@ open class DriverGlobalProps : CoreGlobalProps() {
                 ?: "$REFRESH_CACHE").toLong()
         )
 
-    lateinit var executor: IExecutor
+    val executor: IExecutor
+        get() = localExecutor.get()
+
+    val localExecutor = ThreadLocal<IExecutor>()
 }
 
 object Global : DriverGlobalProps()

@@ -16,12 +16,12 @@ class LoginModel() : IBaseModel() {
     var password: String by Fields.input()
     var userName: String by Fields.input()
 
-    override val mappings: Map<KProperty<*>, BaseSelector>
+   /* override val mappings: LinkedHashMap<KProperty<*>, BaseSelector>
         get() =
-            mapOf(
+            LinkedHashMap(
                 ::userName to AuthPage.login,
                 ::password to AuthPage.password
-            )
+            )*/
 }
 
 @UI.Widgets.Form(LoginModel::class)

@@ -1,7 +1,7 @@
 package org.xpathqs.driver.moke
 
 import org.xpathqs.core.selector.base.ISelector
-import org.xpathqs.driver.IDriver
+import org.xpathqs.driver.core.IDriver
 
 open class MkDriver : IDriver {
 

@@ -40,7 +40,7 @@ open class XmlTest(
         val xml = getResourceAsText(path)
         executor = MockCachedExecutor(xml, cache)
         navigator.init(executor)
-        org.xpathqs.driver.constants.Global.executor = executor
+        org.xpathqs.driver.constants.Global.localExecutor.set(executor)
     }
 
     open protected fun initLog() {

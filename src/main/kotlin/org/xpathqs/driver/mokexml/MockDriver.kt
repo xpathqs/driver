@@ -1,7 +1,7 @@
 package org.xpathqs.driver.mokexml
 
 import org.xpathqs.core.selector.base.ISelector
-import org.xpathqs.driver.IDriver
+import org.xpathqs.driver.core.IDriver
 
 class MockDriver(private val source: String): IDriver {
     override val pageSource: String

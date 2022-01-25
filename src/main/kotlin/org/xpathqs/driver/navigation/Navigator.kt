@@ -47,6 +47,7 @@ open class Navigator {
     }
 
     fun addEdge(edge: Edge) {
+        Log.info("Call addEdge to the: " + this)
         if(!edges.contains(edge)) {
             val newEdge = graph.addEdge(edge.from, edge.to)
             newEdge.from = edge.from
@@ -54,6 +55,7 @@ open class Navigator {
             newEdge.action = edge.action
             edges.add(newEdge)
             graph.setEdgeWeight(newEdge, edge._weight)
+            Log.info("Adge was edded: $edge")
         }
     }
 

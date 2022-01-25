@@ -1,5 +1,6 @@
 package org.xpathqs.driver.navigation.annotations
 
+import org.xpathqs.core.selector.base.BaseSelector
 import org.xpathqs.core.selector.block.Block
 import org.xpathqs.driver.widgets.IBaseModel
 import kotlin.reflect.KClass
@@ -49,6 +50,13 @@ class UI {
             AnnotationTarget.FIELD
         )
         @Retention(AnnotationRetention.RUNTIME)
+        annotation class DropdownItem
+
+        @Target(
+            AnnotationTarget.CLASS,
+            AnnotationTarget.FIELD
+        )
+        @Retention(AnnotationRetention.RUNTIME)
         annotation class ValidationError
 
         @Target(
@@ -71,6 +79,26 @@ class UI {
         )
         @Retention(AnnotationRetention.RUNTIME)
         annotation class Back
+
+        @Target(
+            AnnotationTarget.CLASS,
+            AnnotationTarget.FIELD
+        )
+        @Retention(AnnotationRetention.RUNTIME)
+        annotation class Checkbox(
+            val onChecked: KClass<out BaseSelector> = BaseSelector::class,
+            val onUnchecked: KClass<out BaseSelector> = BaseSelector::class,
+            val default: Boolean = true
+        )
+
+        @Target(
+            AnnotationTarget.CLASS,
+            AnnotationTarget.FIELD
+        )
+        @Retention(AnnotationRetention.RUNTIME)
+        annotation class Selectable(
+            val onSelected: Array<KClass<out BaseSelector>> = [],
+        )
     }
     class Visibility {
         @Target(
@@ -85,7 +113,17 @@ class UI {
             AnnotationTarget.FIELD
         )
         @Retention(AnnotationRetention.RUNTIME)
-        annotation class Dynamic(val modelState: Int = UNDEF_STATE)
+        annotation class Dynamic(
+            val modelState: Int = UNDEF_STATE,
+            val modelDepends: Int = UNDEF_STATE
+        )
+
+        @Target(
+            AnnotationTarget.CLASS,
+            AnnotationTarget.FIELD
+        )
+        @Retention(AnnotationRetention.RUNTIME)
+        annotation class Backend
 
         companion object {
             const val UNDEF_STATE = -1

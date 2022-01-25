@@ -20,11 +20,15 @@ open class Navigable(
         = ModelStateSelectorNavigation(
             ModelStateParentNavigation(
                 FormSelectorSelectOptionNavigation(
-                    FormSelectorValidationErrorNavigation(
+                    //FormSelectorValidationErrorNavigation(
                         TriggerModelNavigation(
-                            BlockSelectorNavigationImpl()
+                            CheckBoxNavigation(
+                                SelectableNavigation(
+                                    BlockSelectorNavigationImpl()
+                                )
+                            )
                         )
-                    )
+                   // )
                 )
             )
         )

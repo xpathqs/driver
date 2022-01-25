@@ -2,7 +2,7 @@ package org.xpathqs.driver.executor
 
 import org.xpathqs.core.selector.base.BaseSelector
 import org.xpathqs.core.selector.base.ISelector
-import org.xpathqs.driver.IDriver
+import org.xpathqs.driver.core.IDriver
 import org.xpathqs.driver.actions.IAction
 import org.xpathqs.driver.extensions.isHidden
 

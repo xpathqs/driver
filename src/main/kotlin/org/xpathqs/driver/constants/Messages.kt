@@ -46,6 +46,11 @@ object Messages {
             val toString = ""
         }
 
+        object InputFile {
+            val name = ""
+            val toString = ""
+        }
+
         object Click {
             val name = ""
             val toString = ""
