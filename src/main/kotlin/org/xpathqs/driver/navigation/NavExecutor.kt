@@ -3,6 +3,9 @@ package org.xpathqs.driver.navigation
 import org.xpathqs.core.selector.base.BaseSelector
 import org.xpathqs.core.selector.base.findAnnotation
 import org.xpathqs.core.selector.base.findParentWithAnnotation
+import org.xpathqs.core.selector.base.hasAnnotation
+import org.xpathqs.core.selector.block.Block
+import org.xpathqs.core.selector.block.findWithAnnotation
 import org.xpathqs.core.selector.extensions.parents
 import org.xpathqs.core.selector.extensions.rootParent
 import org.xpathqs.core.selector.selector.Selector
@@ -15,6 +18,7 @@ import org.xpathqs.driver.executor.ActionExecMap
 import org.xpathqs.driver.executor.CachedExecutor
 import org.xpathqs.driver.executor.Decorator
 import org.xpathqs.driver.executor.IExecutor
+import org.xpathqs.driver.extensions.click
 import org.xpathqs.driver.extensions.isHidden
 import org.xpathqs.driver.extensions.isVisible
 import org.xpathqs.driver.extensions.makeVisible
@@ -27,10 +31,14 @@ import java.time.Duration
 
 open class NavExecutor(
     origin: IExecutor,
-    protected val navigator: Navigator
+    val navigator: Navigator
 ) : Decorator(origin) {
     init {
         navigator.init(this)
+    }
+
+    fun refreshCache() {
+        (origin as? CachedExecutor)?.refreshCache()
     }
 
     override val actions: ActionExecMap = ActionExecMap().apply {
@@ -44,32 +52,23 @@ open class NavExecutor(
             Log.action(Messages.NavExecutor.beforeAction(action)) {
             //    val ann = (action.on.rootParent as? BaseSelector)?.findAnnotation<NavOrder>()
 
-                val curPage = navigator.currentPage
+                var curPage = navigator.currentPage
                 val sourcePage = action.on.rootParent as? INavigable
 
                 val blockIsVisible = (sourcePage !is Page
                     && (sourcePage as? INavigableDetermination)?.isVisible == true)
 
-                if(sourcePage != null && curPage != sourcePage && !blockIsVisible) {
+                if(sourcePage != null && curPage != sourcePage && !blockIsVisible && sourcePage is Page) {
                     Log.action("Необходима навигация") {
-                        Log.info("Navigator: $navigator")
-                        Log.info("Executor: $this")
-                        Log.info("Driver: ${this.driver}")
-                        val navigations = navigator.findPath(curPage, sourcePage)
-                            ?: throw XPathQsException.NoNavigation()
+                        if((curPage as? Block)?.hasAnnotation(UI.Nav.Autoclose::class) == true) {
+                            val closeBtn = (curPage as Block).findWithAnnotation(UI.Widgets.Back::class) ?:
+                                 (curPage as Block).findWithAnnotation(UI.Widgets.ClickToClose::class)
 
-                        navigations.edgeList.forEach {
-                            if(it.action != null) {
-                                it.action!!()
-                                Thread.sleep(500)
-                                (origin as? CachedExecutor)?.refreshCache()
-                            }
-                            (it.to as? ILoadable)?.waitForLoad(Duration.ofSeconds(30))
-                            val cp = navigator.currentPage
-                            if((it.to is INavigableDetermination && it.to is Page) && it.to != cp) {
-                                throw Exception("Wrong page")
-                            }
+                            closeBtn?.click()
+
+                            curPage = navigator.currentPage
                         }
+                        navigator.navigate(curPage, sourcePage)
                     }
 
                     val endPage = navigator.currentPage as Page
@@ -83,11 +82,20 @@ open class NavExecutor(
                 }
 
                 if(action.on.isHidden) {
-                   /* val form = action.on.findParentWithAnnotation(UI.Widgets.Form::class) as? IBlockSelectorNavigation
-                    form?.navigate(action.on)*/
-
-                    action.on.parents.filterIsInstance<IBlockSelectorNavigation>()?.firstOrNull()?.let {
-                        it.navigate(action.on)
+                    val navigations = navigator.findPath(curPage, action.on.base as? INavigable)
+                    if(navigations != null) {
+                        navigations.edgeList.forEach {
+                            if(it.action != null) {
+                                it.action!!()
+                                Thread.sleep(500)
+                                (origin as? CachedExecutor)?.refreshCache()
+                            }
+                            (it.to as? ILoadable)?.waitForLoad(Duration.ofSeconds(30))
+                        }
+                    } else {
+                        action.on.parents.filterIsInstance<IBlockSelectorNavigation>()?.firstOrNull()?.let {
+                            it.navigate(action.on, navigator)
+                        }
                     }
                 }
             }

@@ -8,6 +8,7 @@ interface ICache {
 
     fun getAttribute(xpath: String, name: String): String
     fun getAttributes(xpath: String, name: String): Collection<String>
+    fun getAttributes(xpath: String): Collection<Pair<String, String>>
 
     fun clear() {}
 }

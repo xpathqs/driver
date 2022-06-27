@@ -3,16 +3,21 @@ package org.xpathqs.driver.navigation.util
 import org.xpathqs.core.selector.base.findAnnotation
 import org.xpathqs.core.selector.base.hasAnnotation
 import org.xpathqs.core.selector.block.Block
+import org.xpathqs.core.selector.block.allInnerSelectorBlocks
 import org.xpathqs.core.selector.block.allInnerSelectors
 import org.xpathqs.driver.actions.ClickAction
 import org.xpathqs.driver.actions.SwitchTabAction
 import org.xpathqs.driver.constants.Global
 import org.xpathqs.driver.exceptions.XPathQsException
 import org.xpathqs.driver.extensions.click
+import org.xpathqs.driver.extensions.waitForVisible
+import org.xpathqs.driver.navigation.Navigator
 import org.xpathqs.driver.navigation.annotations.UI
+import org.xpathqs.driver.navigation.base.ILoadable
 import org.xpathqs.driver.navigation.base.INavigable
 import org.xpathqs.driver.navigation.base.model
 import org.xpathqs.driver.page.Page
+import java.time.Duration
 import kotlin.reflect.full.memberFunctions
 
 class NavigationParser(
@@ -36,6 +41,8 @@ class NavigationParser(
         }
 
         val selectors = page.allInnerSelectors.filter {
+            it.hasAnnotation(UI.Nav.PathTo::class)
+        } + page.allInnerSelectorBlocks.filter {
             it.hasAnnotation(UI.Nav.PathTo::class)
         }
         selectors.forEach {
@@ -69,6 +76,8 @@ class NavigationParser(
                 ) {
                     page.model?.submit(page) ?:
                         throw XPathQsException.NoModelForThePage(page as Page)
+                    obj as ILoadable
+                    obj.waitForLoad(Duration.ofSeconds(30))
                 }
             }
         }

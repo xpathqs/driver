@@ -4,22 +4,23 @@ import org.jgrapht.GraphPath
 import org.jgrapht.alg.shortestpath.DijkstraShortestPath
 import org.jgrapht.graph.SimpleDirectedWeightedGraph
 import org.xpathqs.core.selector.base.ISelector
+import org.xpathqs.core.selector.base.hasAnnotation
 import org.xpathqs.core.selector.block.Block
 import org.xpathqs.core.selector.extensions.rootParent
 import org.xpathqs.driver.constants.Messages
 import org.xpathqs.driver.exceptions.XPathQsException
+import org.xpathqs.driver.executor.CachedExecutor
 import org.xpathqs.driver.executor.IExecutor
 import org.xpathqs.driver.log.Log
 import org.xpathqs.driver.navigation.annotations.UI
+import org.xpathqs.driver.navigation.base.*
 import org.xpathqs.driver.page.*
-import org.xpathqs.driver.navigation.base.INavigable
-import org.xpathqs.driver.navigation.base.INavigableDetermination
-import org.xpathqs.driver.navigation.base.IPageCallback
 import org.xpathqs.driver.navigation.util.NavigationParser
 import org.xpathqs.log.style.StyleFactory.keyword
 import org.xpathqs.log.style.StyleFactory.selectorName
+import java.time.Duration
 
-open class Navigator {
+open class Navigator() : INavigator {
     private lateinit var executor: IExecutor
     private val pages = ArrayList<INavigableDetermination>()
     private val blocks = ArrayList<INavigable>()
@@ -44,6 +45,12 @@ open class Navigator {
             }
             graph.addVertex(page)
         }
+    }
+
+    fun getByName(pageName: String): Page? {
+        return pages.firstOrNull {
+            (it as? Page)?.name == pageName
+        } as? Page
     }
 
     fun addEdge(edge: Edge) {
@@ -77,13 +84,13 @@ open class Navigator {
 
    private val sortedPages: Collection<INavigableDetermination> by lazy {
        pages.sortByDescending { p ->
-           val ann = p.javaClass.annotations.find { it is UI.Nav.Order } as? UI.Nav.Order
+           val ann = (p as Block).annotations.find { it is UI.Nav.Order } as? UI.Nav.Order
            ann?.type?.value ?: UI.Nav.Order.DEFAULT
        }
        pages
    }
 
-    open val currentPage: INavigableDetermination
+    override val currentPage: INavigableDetermination
         get() {
             return Log.action(Messages.Navigator.curPage) {
 
@@ -115,7 +122,32 @@ open class Navigator {
             }
         }
 
-    fun findPath(from: INavigable, to: INavigable): GraphPath<INavigable, Edge>? {
+    fun findPath(from: INavigable?, to: INavigable?): GraphPath<INavigable, Edge>? {
+        if(to == null) return null
         return shortestPath.getPath(from, to)
     }
+
+    override fun navigate(from: INavigable, to: INavigable) {
+        if(from === to) return
+
+        val navigations = findPath(from, to)
+            ?: throw XPathQsException.NoNavigation()
+
+        navigations.edgeList.forEach {
+            if(it.action != null) {
+                it.action!!()
+                Thread.sleep(500)
+                (executor as? NavExecutor)?.refreshCache()
+            }
+            (it.to as? ILoadable)?.waitForLoad(Duration.ofSeconds(30))
+            val cp = currentPage
+            if((it.to is INavigableDetermination && it.to is Page) && it.to != cp) {
+                if((cp as? Block)?.hasAnnotation(UI.Nav.Autoclose::class) == true) {
+                    println("close page!")
+                }
+                throw Exception("Wrong page")
+            }
+        }
+    }
+
 }

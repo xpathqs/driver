@@ -24,7 +24,7 @@ class LoginModel() : IBaseModel() {
             )*/
 }
 
-@UI.Widgets.Form(LoginModel::class)
+@UI.Widgets.Form()
 object AuthPage : Page() {
     val login = tagSelector("input1")
     val password = tagSelector("input2")

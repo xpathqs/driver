@@ -12,12 +12,13 @@ import org.xpathqs.driver.extensions.isVisible
 import org.xpathqs.driver.navigation.annotations.UI
 import org.xpathqs.driver.navigation.base.IBlockSelectorNavigation
 import org.xpathqs.driver.navigation.base.IModelBlock
+import org.xpathqs.driver.navigation.base.INavigator
 import org.xpathqs.driver.widgets.IFormSelect
 
 class ModelDependencyNavigation(
     private val base: IBlockSelectorNavigation
 ): IBlockSelectorNavigation {
-    override fun navigate(elem: ISelector) {
+    override fun navigate(elem: ISelector, navigator: INavigator) {
         if(elem is BaseSelector) {
             val blockWithModel = elem.parents.filterIsInstance<IModelBlock<*>>() as? IModelBlock<*>
             if(blockWithModel != null) {
@@ -31,6 +32,6 @@ class ModelDependencyNavigation(
 
         }
 
-        return base.navigate(elem)
+        return base.navigate(elem, navigator)
     }
 }

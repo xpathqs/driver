@@ -20,6 +20,11 @@ val <T : BaseSelector> T.isVisible
 val <T : BaseSelector> T.isHidden: Boolean
     get() = !isVisible
 
+val <T : BaseSelector> T.isDisabled: Boolean
+    get() {
+        return this.getAllAttrs().find { it.first == "disabled" } != null
+    }
+
 fun <T : BaseSelector> T.waitForVisible(duration: Duration = Global.WAIT_FOR_ELEMENT_TIMEOUT): T {
     Global.executor.execute(
         WaitForSelectorAction(this, duration)
@@ -89,6 +94,9 @@ fun <T : BaseSelector> T.clear(): T {
 val <T : BaseSelector> T.text: String
     get() = getAttr(Global.TEXT_ARG)
 
+val <T : BaseSelector> T.textItems: Collection<String>
+    get() = getAttrs(Global.TEXT_ARG)
+
 val <T : BaseSelector> T.value: String
     get() = getAttr("value")
 
@@ -108,6 +116,12 @@ val <T : BaseSelector> T.isChecked: Boolean
 
 fun <T : BaseSelector> T.getAttr(name: String) =
     Global.executor.getAttr(this, name)
+
+fun <T : BaseSelector> T.getAllAttrs() =
+    Global.executor.getAllAttrs(this)
+
+fun <T : BaseSelector> T.getAttrs(name: String) =
+    Global.executor.getAttrs(this, name)
 
 val <T : BaseSelector> T.count: Int
     get() = Global.executor.getElementsCount(this)

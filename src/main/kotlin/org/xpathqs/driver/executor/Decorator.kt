@@ -35,6 +35,10 @@ open class Decorator(
         return origin.getAttr(selector, attr)
     }
 
+    override fun getAllAttrs(selector: BaseSelector): Collection<Pair<String, String>> {
+        return origin.getAllAttrs(selector)
+    }
+
     override fun getAttrs(selector: BaseSelector, attr: String): Collection<String> {
         return origin.getAttrs(selector, attr)
     }

@@ -17,14 +17,14 @@ interface IModelBlock<T: IBaseModel> {
         return m.states[state] as? T ?: m
     }
 
-    open fun getFromUi() = invoke()
+    open fun getFromUi(): T {
+        return invoke()
+    }
 }
 
 val Block.model: IBaseModel?
     get() {
-        val form = this.findAnyParentAnnotation<UI.Widgets.Form>()
-        return form?.model?.createInstance() ?:
-            (this as? IModelBlock<*>)?.invoke() ?:
+        return (this as? IModelBlock<*>)?.invoke() ?:
             this.parents.filterIsInstance<IModelBlock<*>>().firstOrNull()?.invoke() ?:
             this.allInnerSelectorBlocks?.filterIsInstance<IModelBlock<*>>()?.firstOrNull()?.invoke() ?:
             (this.rootParent as? Block)?.allInnerSelectorBlocks?.filterIsInstance<IModelBlock<*>>()?.firstOrNull()?.invoke()

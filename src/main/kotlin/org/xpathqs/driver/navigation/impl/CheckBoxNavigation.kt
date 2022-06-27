@@ -12,13 +12,14 @@ import org.xpathqs.driver.extensions.isVisible
 import org.xpathqs.driver.extensions.waitForVisible
 import org.xpathqs.driver.navigation.annotations.UI
 import org.xpathqs.driver.navigation.base.IBlockSelectorNavigation
+import org.xpathqs.driver.navigation.base.INavigator
 import org.xpathqs.driver.widgets.CheckBox
 import java.time.Duration
 
 class CheckBoxNavigation(
     private val base: IBlockSelectorNavigation
 ): IBlockSelectorNavigation {
-    override fun navigate(elem: ISelector) {
+    override fun navigate(elem: ISelector, navigator: INavigator) {
         if(elem is BaseSelector) {
             val cb = (elem.rootParent as? Block)?.allInnerSelectors?.firstOrNull {
                 it.hasAnnotation(UI.Widgets.Checkbox::class)
@@ -48,6 +49,6 @@ class CheckBoxNavigation(
             }
         }
 
-        return base.navigate(elem)
+        return base.navigate(elem, navigator)
     }
 }

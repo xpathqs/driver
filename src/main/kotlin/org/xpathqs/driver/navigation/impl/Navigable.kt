@@ -5,12 +5,16 @@ import org.xpathqs.core.selector.base.ISelector
 import org.xpathqs.core.selector.base.hasAnnotation
 import org.xpathqs.core.selector.block.Block
 import org.xpathqs.core.selector.block.allInnerSelectors
+import org.xpathqs.core.selector.block.findWithAnnotation
+import org.xpathqs.driver.exceptions.XPathQsException
 import org.xpathqs.driver.extensions.click
+import org.xpathqs.driver.extensions.makeVisible
 import org.xpathqs.driver.navigation.Edge
 import org.xpathqs.driver.navigation.Navigator
 import org.xpathqs.driver.navigation.annotations.UI
 import org.xpathqs.driver.navigation.base.*
 import org.xpathqs.driver.navigation.util.IBlockNavigation
+import org.xpathqs.driver.page.Page
 import java.time.Duration
 
 open class Navigable(
@@ -24,7 +28,9 @@ open class Navigable(
                         TriggerModelNavigation(
                             CheckBoxNavigation(
                                 SelectableNavigation(
-                                    BlockSelectorNavigationImpl()
+                                    ClickToBackNavigation(
+                                        BlockSelectorNavigationImpl()
+                                    )
                                 )
                             )
                         )
@@ -62,8 +68,8 @@ open class Navigable(
         }
     }
 
-    override fun navigate(elem: ISelector) {
-        selectorNavigator.navigate(elem)
+    override fun navigate(elem: ISelector, navigator: INavigator) {
+        selectorNavigator.navigate(elem, navigator)
     }
 
     override fun navigate() {
@@ -72,7 +78,16 @@ open class Navigable(
                 if(this.block.selfNavigation.byCheckbox is BaseSelector) {
                     (this.block.selfNavigation.byCheckbox as BaseSelector).click()
                     (this.block as ILoadable).waitForLoad(Duration.ofSeconds(30))
+                    return
                 }
+            }
+        }
+
+        if(this.block is Page) {
+            try {
+                navigator.navigate(navigator.currentPage, this.block)
+            } catch (e : XPathQsException.NoNavigation) {
+                this.block.findWithAnnotation(UI.Nav.DeterminateBy::class)?.makeVisible()
             }
         }
     }

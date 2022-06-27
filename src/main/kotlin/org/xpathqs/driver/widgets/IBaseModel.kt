@@ -17,17 +17,12 @@ import org.xpathqs.driver.log.Log
 import org.xpathqs.driver.navigation.annotations.Model
 import org.xpathqs.driver.navigation.annotations.UI
 import org.xpathqs.driver.navigation.base.*
-import org.xpathqs.driver.util.newInstance
+import org.xpathqs.driver.util.clone
 import java.time.Duration
-import java.util.*
-import kotlin.collections.ArrayList
-import kotlin.collections.HashSet
-import kotlin.collections.LinkedHashMap
 import kotlin.properties.Delegates
 import kotlin.reflect.KClass
 import kotlin.reflect.KMutableProperty
 import kotlin.reflect.KProperty
-import kotlin.reflect.full.createInstance
 import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.memberProperties
@@ -36,7 +31,7 @@ import kotlin.reflect.jvm.javaType
 import kotlin.reflect.jvm.jvmName
 
 open class IBaseModel(
-    private val view: Block? = null
+    val view: Block? = null
 ) {
     open val mappings: LinkedHashMap<KProperty<*>, BaseSelector>
         by lazy {
@@ -65,20 +60,18 @@ open class IBaseModel(
 
     open val propArgsMappings: LinkedHashMap<KProperty<*>, BaseSelector>
         by lazy {
-            val before = isInit.get() == true
-            isInit.set(false)
-
-            allProperties().forEach { p ->
-                val parent = findParent(this, p)
-                try {
-                    val v = p.getter.call(parent)
-                    (p as? KMutableProperty<*>)?.setter?.call(parent, v)
-                } catch (e: Exception) {
-                    Log.error("No value for the '${p.name}'\n${e.message}")
+            ignoreUpdateModel {
+                allProperties().forEach { p ->
+                    val parent = findParent(this, p)
+                    try {
+                        val v = p.getter.call(parent)
+                        (p as? KMutableProperty<*>)?.setter?.call(parent, v)
+                    } catch (e: Exception) {
+                        Log.error("No value for the '${p.name}'\n${e.message}")
+                    }
                 }
             }
 
-            isInit.set(before)
             lazyPropMap
         }
 
@@ -104,6 +97,23 @@ open class IBaseModel(
 
     private val filledProps = HashSet<KProperty<*>>()
 
+    fun<T> updateModel(l: IBaseModel.()->T): T {
+        disableUiUpdate()
+        val r = this.l()
+        enableUiUpdate()
+        return r
+    }
+
+    fun<T> ignoreUpdateModel(l: IBaseModel.()->T): T {
+        val before = isInit.get() == true
+        isInit.set(false)
+
+        val r = this.l()
+
+        isInit.set(before)
+        return r
+    }
+
     private var submitCalled = false
     open fun submit() {
         submitCalled = false
@@ -128,7 +138,23 @@ open class IBaseModel(
 
     open fun reset() {
         mappings.keys.forEach {
-            (it as KMutableProperty<*>).setter.call(this, "")
+            if(it.getter.returnType.javaType.typeName.endsWith("String")) {
+                val s = findSelByProp(it)
+                makeVisible(s, it, true)
+                if(s is IFormInput) {
+                    s.clear()
+                } else {
+                    (it as KMutableProperty<*>).setter.call(this, "")
+                }
+                val block = s.rootParent
+                if(block is Block) {
+                    block.findWithAnnotation(UI.Widgets.ClickToClose::class)?.let {
+                        it.click()
+                        Thread.sleep(100)
+                    }
+                }
+
+            }
         }
     }
 
@@ -165,50 +191,68 @@ open class IBaseModel(
         }
     }
 
+    private var checkFilled = false
+
     open fun fill(prop: KMutableProperty<*>) {
-        val parent = findParent(this, prop)
-        val v = prop.getter.call(parent)
+        Log.action("fill the ${prop.name}") {
+            val parent = findParent(this, prop)
 
-        prop.setter.call(parent, v)
+            val v = try {
+                prop.getter.call(parent)
+            } catch (e: Exception) {
+                Log.error("Can't get prop value")
+                throw e
+            }
 
-       /* if(prop.isPrimitive && v != null) {
-            val sel = mappings.filterKeys { it.name == prop.name }.values.first()
+            // prop.setter.call(parent, v)
 
-            Log.action("Selector ${sel.name} was found, calling input") {
-                makeVisible(sel, prop)
-                if (sel is IFormInput) {
-                    if(v is String && v.isEmpty()) {
-                        sel.clear()
+            //When property is not a delegate
+            if(prop.isPrimitive && v != null && !lazyPropMap.containsKey(prop)) {
+                val sel = mappings.filterKeys { it.name == prop.name }.values.first()
+
+                Log.action("Selector ${sel.name} was found, calling input") {
+                    makeVisible(sel, prop)
+                    if (sel is IFormInput) {
+                        if(v is String && v.isEmpty()) {
+                            sel.clear()
+                        } else {
+                            sel.input(v.toString())
+                        }
                     } else {
                         sel.input(v.toString())
                     }
-                } else {
-                    sel.input(v.toString())
+                }
+            } else {
+                Log.action("Set $v to the ${parent?.toString()}") {
+                    prop.setter.call(parent, v)
                 }
             }
-        } else {
-            prop.setter.call(parent, v)
-        }*/
+        }
     }
 
-    open fun fill() {
+    open fun fill(noSubmit: Boolean = false) {
         filledProps.clear()
+        checkFilled = true
         if(this is IOrderedSteps) {
-            evalActions(steps)
+            evalActions(steps, noSubmit)
         } else {
             this.mappings.keys.forEach {
                 fill(it as KMutableProperty<*>)
             }
         }
-
+        checkFilled = false
         this.propTrig = true
     }
 
-    fun evalActions(steps: Collection<InputAction>) {
+    private fun evalActions(steps: Collection<InputAction>, noSubmit: Boolean = false) {
+        checkFilled = true
         steps.forEach {
-            val action = if(it is SwitchInputAction)
-                if(it.func()) it.onTrue else it.onFalse
-            else it
+            val action = if(it is SwitchInputAction) {
+                if (it.func()) it.onTrue else it.onFalse
+            } else {
+                it
+            }
+
             action.props.forEach {
                 if(it.getter.parameters.isEmpty()) {
                     val v = it.getter.call()
@@ -226,14 +270,23 @@ open class IBaseModel(
             }
 
             Thread.sleep(500) //short delay after input action
-            if(action.type == InputType.SUBMIT) {
+            if(action.type == InputType.SUBMIT && !noSubmit) {
                 Thread.sleep(500)
-                (getSelector(action).rootParent as Block).findWithAnnotation(
+                val sel =
+                    if(action.props.isEmpty()) {
+                        getSelector(steps.first())
+                    } else {
+                        getSelector(action)
+                    }
+
+                (sel.rootParent as Block).findWithAnnotation(
                     UI.Widgets.Submit::class
                 )?.waitForVisible()?.click() ?: throw Exception("No Submit Widget button")
+
                 submitCalled = true
             }
         }
+        checkFilled = false
     }
 
     private fun getSelector(action: InputAction): BaseSelector {
@@ -247,10 +300,7 @@ open class IBaseModel(
         if(state == DEFAULT) {
             submit()
         } else {
-            states[state]?.let {
-                //it.fill()
-                it.submit()
-            }
+            states[state]?.submit()
         }
     }
 
@@ -258,7 +308,9 @@ open class IBaseModel(
         if(this is IOrderedSteps) {
             val stepsToSubmit = ArrayList<InputAction>()
             steps.forEach { action ->
-                if(action.type == InputType.DYNAMIC) {
+                if(action.type == InputType.DYNAMIC
+                    || (action.type == InputType.SUBMIT && action.props.isEmpty())
+                ) {
                     stepsToSubmit.add(action)
                 } else {
                     val sel = getSelector(action)
@@ -279,7 +331,9 @@ open class IBaseModel(
     }
 
     fun findSelByProp(prop: KProperty<*>) =
-        mappings.filterKeys { it.name == prop.name }.values.first()
+        mappings.filterKeys {
+            it.name == prop.name
+        }.values.first()
 
     fun findPropBySel(sel: BaseSelector): KProperty<*>? {
         val res = mappings.filterValues {
@@ -301,49 +355,66 @@ open class IBaseModel(
 
     private var propTrig = false
 
+    val KProperty<*>.fullName: String
+        get() {
+            return this.toString().substringAfter("var ").substringBefore(":")
+        }
+
     fun findParent(source: Any, prop: KProperty<*>): Any? {
-       // return Log.action("Finding parent for ${prop.name}") {
+        return Log.action("Finding parent for ${prop.name}, source: $source") {
             try {
                 properties(source).forEach {
-                    if(it.name == prop.name || it === prop) {
-                        return source
+                    if(it.fullName == prop.fullName || it === prop ) {
+                        Log.info("parent was found")
+                        return@action source
+                    } else {
+                        try {
+                            val itObj = it.getter.call(source)
+                            val sourceObj =  prop.getter.call(source)
+                            if((itObj === sourceObj) && itObj != null) {
+                                Log.info("parent was found via evaluation")
+                                return@action source
+                            }
+                        } catch (e: Exception) {
+
+                        }
                     }
                     if(!it.isPrimitive) {
                         try {
                             it.isAccessible = true
                         } catch (e:  Error) {
 
-                        }catch (e:  Exception) {
+                        } catch (e:  Exception) {
 
                         }
                         var res: Any? = null
                         try {
+                            Log.info("parent will be checked in recursion")
                             res = findParent(it.getter.call(source)!!, prop)
                         } catch (e:  Exception) {
-
+                            Log.error("Exception in find parent")
                         } catch (e: Error) {
-
+                            Log.error("Error in find parent")
                         }
                         if(res != null) {
-                            return res
+                            return@action res
                         }
                     }
                 }
             } catch (e: Exception) {
-
+                Log.error("Exception in evaluation")
             }
 
-            return null
-      //  }
-
+            return@action null
+        }
     }
 
-    fun properties(obj: Any = this) = obj::class.memberProperties.filter {
+    private fun properties(obj: Any = this) = obj::class.memberProperties.filter {
         it is KMutableProperty<*>
                 || it.returnType.javaType.typeName.startsWith(obj::class.jvmName)
     }
 
-    fun allProperties(obj: Any = this): Collection<KProperty<*>> {
+    private fun allProperties(obj: Any = this): Collection<KProperty<*>> {
         val res = ArrayList<KProperty<*>>()
 
         res.addAll(
@@ -359,7 +430,9 @@ open class IBaseModel(
             )
         }
 
-        if (res.isEmpty()) throw XPathQsException.ModelDoesntHaveMutableProps(this)
+        if (res.isEmpty() && obj::class.declaredMemberProperties.isNotEmpty()) {
+            throw XPathQsException.ModelDoesntHaveMutableProps(this)
+        }
 
         val c = this::class.java.declaredFields
         val orderById = c.withIndex().associate { it.value.name to it.index }
@@ -367,45 +440,95 @@ open class IBaseModel(
         return res.sortedBy { orderById[it.name] }
     }
 
-    fun makeVisible(sel: BaseSelector, prop: KProperty<*>) {
-        val p = findParent(this@IBaseModel, prop)
-        if(sel.isHidden) {
-            Log.action("Selector $sel is hidden") {
-                if(p is IValueDependency) {
-                    val vd = p.valueDependency.find { vd ->
-                        vd.source.find { it.name == prop.name } != null
-                    }
+    fun makeVisible(sel: BaseSelector, prop: KProperty<*>, disabled: Boolean = false) {
+        Log.action("Trying to make visible ${sel.name}") {
+            val p = findParent(this@IBaseModel, prop)
 
-                    val prop = vd?.dependsOn as? KMutableProperty<*>
-                    if(prop != null) {
-                        Log.action("Dependency was found of: ${prop.name}") {
-                            if(prop.getter.parameters.size == 1) {
-                                val thiz = findParent(this@IBaseModel, prop)
-                                if(vd!!.value is DefaultValue) {
-                                    val v = prop.getter.call(thiz)
-                                    prop.setter.call(thiz, v)
+            if(sel.isHidden || disabled) {
+                Log.action("Selector $sel is hidden") {
+                    if(p is IValueDependency) {
+                        val vd = p.valueDependency.find { vd ->
+                            vd.source.find { it.name == prop.name } != null
+                        }
+
+                        val prop = vd?.dependsOn as? KMutableProperty<*>
+                        if(prop != null) {
+                            Log.action("Dependency was found of: ${prop.name}") {
+                                if(prop.getter.parameters.size == 1) {
+                                    Log.info("getter has 1 param")
+                                    val thiz = findParent(this@IBaseModel, prop)
+                                    if(vd!!.value is DefaultValue) {
+                                        val v = prop.getter.call(thiz)
+                                        Log.action("Default value(${v.toString()}) will be set") {
+                                            prop.setter.call(thiz, v)
+                                        }
+                                    } else {
+                                        Log.action("value(${vd.value}) will be set") {
+                                            prop.setter.call(thiz, vd!!.value)
+                                        }
+                                    }
+                                    //     Thread.sleep(500)
+                                    vd.source.forEach {
+                                        findSelByProp(it).waitForVisible()
+                                    }
                                 } else {
-                                    prop.setter.call(thiz, vd!!.value)
+                                    Log.info("getter has >1 params")
+                                    if(vd!!.value is DefaultValue) {
+                                        val v = prop.getter.call()
+                                        Log.action("Default value(${v.toString()}) will be set") {
+                                            prop.setter.call(v)
+                                        }
+                                    } else {
+                                        Log.action("value(${vd.value}) will be set") {
+                                            prop.setter.call(vd!!.value)
+                                        }
+                                    }
+                                    //            Thread.sleep(500)
+                                    vd.source.forEach {
+                                        findSelByProp(it).waitForVisible()
+                                    }
                                 }
-                                //     Thread.sleep(500)
-                                vd.source.forEach {
-                                    findSelByProp(it).waitForVisible()
+                            }
+                        } else {
+                            if(this@IBaseModel is IValueDependency) {
+
+                                val parentProp = this@IBaseModel::class.memberProperties.firstOrNull {
+                                    it.call(this) === p
                                 }
-                            } else {
-                                if(vd!!.value is DefaultValue) {
-                                    val v = prop.getter.call()
-                                    prop.setter.call(v)
-                                } else {
-                                    prop.setter.call(vd!!.value)
+
+                                val vd = this.valueDependency.find { vd ->
+                                    vd.source.find { it.name == parentProp?.name } != null
                                 }
-                                //            Thread.sleep(500)
-                                vd.source.forEach {
-                                    findSelByProp(it).waitForVisible()
+
+                                if(vd != null && parentProp != null) {
+                                    Log.action("Dependency was found for parent: ${parentProp.name}") {
+                                        val member = this.valueDependency.find { vd ->
+                                            vd.source.find { it.name == parentProp?.name } != null
+                                        }?.dependsOn
+                                        if(member != null) {
+                                            if(this is IOrderedSteps) {
+                                                val obj = member.getter.call()!!
+                                                val action = this.steps.find {
+                                                    it.props.containsAll(
+                                                        obj::class.members.filterIsInstance<KMutableProperty<*>>()
+                                                    )
+                                                }
+                                                if(action != null) {
+                                                    Log.action("Result will be evolved") {
+                                                        evalActions(
+                                                            listOf(action)
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
                     } else {
                         if(this@IBaseModel is IValueDependency) {
+                            Log.info("model has a dependency")
                             val parentProp = this@IBaseModel::class.memberProperties.firstOrNull {
                                 it.call(this) === p
                             }
@@ -436,63 +559,47 @@ open class IBaseModel(
                             }
                         }
                     }
-                } else {
-                    if(this@IBaseModel is IValueDependency) {
-                        val parentProp = this@IBaseModel::class.memberProperties.firstOrNull {
-                            it.call(this) === p
-                        }
-
-                        val vd = this.valueDependency.find { vd ->
-                            vd.source.find { it.name == parentProp?.name } != null
-                        }
-
-                        if(vd != null && parentProp != null) {
-                            Log.action("Dependency was found for parent: ${parentProp.name}") {
-                                val member = this.valueDependency.find { vd ->
-                                    vd.source.find { it.name == parentProp?.name } != null
-                                }?.dependsOn
-                                if(member != null) {
-                                    if(this is IOrderedSteps) {
-                                        val obj = member.getter.call()!!
-                                        val action = this.steps.find {
-                                            it.props.containsAll(
-                                                obj::class.members.filterIsInstance<KMutableProperty<*>>()
-                                            )
-                                        }
-                                        if(action != null) {
-                                            evalActions(listOf(action))
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
                 }
             }
-        }
-        if(sel.isHidden) {
-            sel.makeVisible()
+            if(sel.isHidden) {
+                Log.info("Selector is still hidden. Lets make it visible via navigation")
+                sel.makeVisible()
+            }
         }
     }
+
+
 
     inner class FieldsCls {
         fun input(mapping: BaseSelector? = null, default: String = "") =
             Delegates.observable(default) { prop, old, new ->
-                // if(old != new) {
-
-                    val ts1 = System.currentTimeMillis()
+                Log.action("Input value to the ${mapping?.name} throw input") {
                     propTrig = true
                     mapping?.let {
                         lazyPropMap[prop] = it
                     }
 
-                    if(isInit.get() == true) {
-                        if(filledProps.contains(prop)) {
-                            return@observable
+                    if(isReadyForUiInput()) {
+                        if(filledProps.contains(prop) && checkFilled) {
+                            return@action
                         }
 
                         val sel = mappings.filterKeys { it.name == prop.name }.values.first()
+
                         makeVisible(sel, prop)
+
+                        if(sel is IFormInput) {
+                            val s = (sel as Block).findWithAnnotation(UI.Widgets.Input::class)
+                            if(s != null) {
+                                try {
+                                    val disabled = s.getAllAttrs().find {
+                                        it.first.equals("disabled", true)
+                                    } != null
+                                    makeVisible(sel, prop, disabled)
+                                } catch (e: Exception) {
+                                }
+                            }
+                        }
 
                         if(ignoreInput.get().peek() !== prop) {
                             Log.action("Selector ${sel.name} was found, calling input") {
@@ -502,6 +609,7 @@ open class IBaseModel(
                                         throw Exception("Selector can't be hidden")
                                     }
                                 }
+
                                 if(sel is IFormSelect && new.isEmpty()) {
                                     sel.selectAny()
                                 } else if (sel is IFormInput) {
@@ -516,9 +624,10 @@ open class IBaseModel(
                                 filledProps.add(prop)
                             }
                         }
-
-
                     }
+                }
+
+
 
                 //}
             }
@@ -539,23 +648,25 @@ open class IBaseModel(
 
         fun click(mapping: BaseSelector? = null, default: String = "") =
             Delegates.observable(default) { prop, old, new ->
-                propTrig = true
-                mapping?.let {
-                    lazyPropMap[prop] = it
-                }
-                if(isInit.get() == true) {
-                    val sel = mappings.filterKeys { it.name == prop.name }.values.first()
+                Log.action("Input value to the ${mapping?.name} throw click") {
+                    propTrig = true
+                    mapping?.let {
+                        lazyPropMap[prop] = it
+                    }
+                    if(isInit.get() == true) {
+                        val sel = mappings.filterKeys { it.name == prop.name }.values.first()
 
-                    makeVisible(sel, prop)
-                    if(ignoreInput.get().peek() !== prop) {
-                        if(sel is IFormSelect && new.isEmpty()) {
-                            sel.selectAny()
-                        } else if (sel is IFormInput) {
-                            sel.input(new)
-                        } else {
-                            sel.text(new).click()
+                        makeVisible(sel, prop)
+                        if(ignoreInput.get().peek() !== prop) {
+                            if(sel is IFormSelect && new.isEmpty()) {
+                                sel.selectAny()
+                            } else if (sel is IFormInput) {
+                                sel.input(new)
+                            } else {
+                                sel.text(new).click()
+                            }
+                            filledProps.add(prop)
                         }
-                        filledProps.add(prop)
                     }
                 }
             }
@@ -609,35 +720,46 @@ open class IBaseModel(
 
     } val Fields = FieldsCls()
 
-    fun readFromUI(): IBaseModel {
-        isInit.set(false)
-        lazyPropMap.forEach { prop, sel ->
-            if(prop is KMutableProperty<*>) {
-                val thiz = findParent(this@IBaseModel, prop)
-                if(sel is IFormRead) {
-                    when(prop.returnType.javaType.typeName.substringAfterLast(".").lowercase()) {
-                        "int" -> prop.setter.call(thiz, sel.readInt())
-                        "boolean" -> prop.setter.call(thiz, sel.readBool())
-                        else -> prop.setter.call(thiz, sel.readString())
-                    }
-                } else {
-                    if(sel.isVisible) {
-                        val v = try {
-                            sel.value
-                        } catch (e: Exception) {
-                            sel.text
-                        }
+    fun getValueByProp(prop: KProperty<*>): String {
+        val parent = findParent(this@IBaseModel, prop)
+        return prop.getter.call(parent).toString()
+    }
 
-                        try {
-                            prop.setter.call(thiz, v)
-                        } catch (e: Exception) {
-                            Log.error("Can't set value for the: ${prop.name}")
+    fun setValueByProp(prop: KMutableProperty<*>, value: String) {
+        val parent = findParent(this@IBaseModel, prop)
+        return prop.setter.call(parent, value)
+    }
+
+    fun readFromUI(): IBaseModel {
+        ignoreUpdateModel {
+            lazyPropMap.forEach { prop, sel ->
+                if(prop is KMutableProperty<*>) {
+                    val thiz = findParent(this@IBaseModel, prop)
+                    if(sel is IFormRead) {
+                        when(prop.returnType.javaType.typeName.substringAfterLast(".").lowercase()) {
+                            "int" -> prop.setter.call(thiz, sel.readInt())
+                            "boolean" -> prop.setter.call(thiz, sel.readBool())
+                            else -> prop.setter.call(thiz, sel.readString())
+                        }
+                    } else {
+                        if(sel.isVisible) {
+                            val v = try {
+                                sel.value
+                            } catch (e: Exception) {
+                                sel.text
+                            }
+
+                            try {
+                                prop.setter.call(thiz, v)
+                            } catch (e: Exception) {
+                                Log.error("Can't set value for the: ${prop.name}")
+                            }
                         }
                     }
                 }
             }
         }
-        isInit.set(true)
+
         return  this
     }
 
@@ -667,7 +789,18 @@ open class IBaseModel(
         const val INCORRECT = 2
         const val EMPTY = 3
 
-        val isInit = ThreadLocal<Boolean>().apply {
+        fun isReadyForUiInput()
+                = isInit.get()
+
+        fun disableUiUpdate() {
+            isInit.set(false)
+        }
+
+        fun enableUiUpdate() {
+            isInit.set(true)
+        }
+
+        private val isInit = ThreadLocal<Boolean>().apply {
             set(true)
         }
 
@@ -688,43 +821,9 @@ val KProperty<*>.isPrimitive: Boolean
         return this.returnType.toString().endsWith("String") || ClassUtils.isPrimitiveOrWrapper(this.javaClass)
     }
 
-fun <T : Any> T.clone() :T {
-    val before = IBaseModel.isInit.get() == true
-    IBaseModel.isInit.set(false)
-
-    val res = this.newInstance()
-    res.copyProps(this)
-
-    val props = this::class.memberProperties.filter {
-        it.returnType.toString().startsWith(
-            this.javaClass.name.replace("$",".")
-        )
+fun <T : IBaseModel> T.clone() :T {
+    return this.ignoreUpdateModel {
+        clone(this) as T
     }
-
-    props.forEach {
-        if(it is KMutableProperty<*>) {
-           // val cloned = it.getter.call(this)!!.clone()
-           // it.setter.call(res, cloned)
-        } else {
-            val to = it.getter.call(res)!!
-            val from = it.getter.call(this)!!
-            to.copyProps(from)
-        }
-    }
-
-    IBaseModel.isInit.set(before)
-    return res
-  //  return props.keys.associateWith { props[it]?.get(this) }
 }
 
-fun Any.copyProps(from: Any) {
-    this::class.memberProperties
-        .filterIsInstance<KMutableProperty<*>>()
-        .forEach {
-            val v = it.getter.call(from)!!
-            val cls = v.javaClass
-            if(cls.name.endsWith("String") || ClassUtils.isPrimitiveOrWrapper(cls)) {
-                it.setter.call(this, v)
-            }
-        }
-}

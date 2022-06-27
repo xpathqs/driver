@@ -25,14 +25,21 @@ open class Loadable(private val block: Block) : ILoadable {
         Log.action("Ожидаем Загрузки страницы") {
             if(loading.loadSelector != null) {
                 loading.loadSelector!!.waitForVisible(duration)
+                if(loading.loadSelector!!.isHidden) {
+                    Log.error("Страница не была загружена")
+                }
             } else if(loading.loadSelectors.isNotEmpty()) {
                 loading.loadSelectors.forEach {
                     if(it.isHidden) {
-                        it.waitForVisible()
+                        it.waitForVisible(duration)
                     }
                 }
             } else {
                 Log.warning("No Load Selector defined")
+            }
+
+            if(!loading.isLoaded) {
+                Log.error("Страница не была загружена")
             }
         }
     }

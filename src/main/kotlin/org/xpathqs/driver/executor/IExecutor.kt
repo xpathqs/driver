@@ -17,6 +17,7 @@ interface IExecutor {
         = selectors.find { it.isHidden } == null
 
     fun getAttr(selector: BaseSelector, attr: String): String
+    fun getAllAttrs(selector: BaseSelector): Collection<Pair<String,String>>
     fun getAttrs(selector: BaseSelector, attr: String): Collection<String>
 
     fun beforeAction(action: IAction) {}

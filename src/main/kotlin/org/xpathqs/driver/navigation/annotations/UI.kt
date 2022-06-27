@@ -12,7 +12,9 @@ class UI {
             AnnotationTarget.FIELD
         )
         @Retention(AnnotationRetention.RUNTIME)
-        annotation class Form(val model: KClass<out IBaseModel>)
+        annotation class Form(
+            val cleanByDefault: Boolean = true
+        )
 
         @Target(
             AnnotationTarget.CLASS,
@@ -179,6 +181,12 @@ class UI {
         )
         @Retention(AnnotationRetention.RUNTIME)
         annotation class WaitFor
+
+        @Target(
+            AnnotationTarget.CLASS
+        )
+        @Retention(AnnotationRetention.RUNTIME)
+        annotation class Autoclose
     }
 
     @Target(

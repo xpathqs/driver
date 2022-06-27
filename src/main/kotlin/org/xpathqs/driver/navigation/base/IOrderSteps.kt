@@ -34,7 +34,15 @@ open class InputAction(
         fun switch(func: ()->Boolean, onTrue: InputAction, onFalse: InputAction) = SwitchInputAction(
             func, onTrue, onFalse
         )
+
+        /*private fun propOrder(obj: Any): Collection<KProperty<*>> {
+            val allProps = obj::class.memberProperties.filterIsInstance<KMutableProperty<*>>()
+            if(obj is IValueDependency) {
+                obj.valueDependency
+            }
+        }*/
     }
+
 }
 
 class SwitchInputAction(

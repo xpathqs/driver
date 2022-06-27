@@ -59,6 +59,10 @@ open class Executor(
         return emptyList()
     }
 
+    override fun getAllAttrs(selector: BaseSelector): Collection<Pair<String, String>> {
+        return emptyList()
+    }
+
     override fun hasActionHandler(action: IAction) = actions.containsKey(action.name)
 
     override fun getActionHandler(action: IAction) =

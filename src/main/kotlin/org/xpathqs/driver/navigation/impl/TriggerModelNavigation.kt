@@ -10,13 +10,14 @@ import org.xpathqs.driver.extensions.isVisible
 import org.xpathqs.driver.navigation.annotations.UI
 import org.xpathqs.driver.navigation.base.IBlockSelectorNavigation
 import org.xpathqs.driver.navigation.base.IModelBlock
+import org.xpathqs.driver.navigation.base.INavigator
 import org.xpathqs.driver.widgets.IBaseModel
 import kotlin.reflect.KMutableProperty
 
 class TriggerModelNavigation(
     private val base: IBlockSelectorNavigation
 ): IBlockSelectorNavigation {
-    override fun navigate(sel: ISelector) {
+    override fun navigate(sel: ISelector, navigator: INavigator) {
         if(sel is BaseSelector) {
             val isValidationError = sel.hasAnnotation(UI.Widgets.ValidationError::class)
 
@@ -29,7 +30,7 @@ class TriggerModelNavigation(
                     m.states[ann?.modelDepends]
                 } else null
 
-                if(m2 == null && isValidationError) {
+                if(/*m2 == null &&*/ isValidationError) {
                     val ann = sel.findAnyParentAnnotation<UI.Visibility.Dynamic>()
                     m2 = if(ann?.modelDepends != null) {
                         m.states[ann?.modelDepends]
@@ -61,6 +62,6 @@ class TriggerModelNavigation(
             }
         }
 
-        return base.navigate(sel)
+        return base.navigate(sel, navigator)
     }
 }

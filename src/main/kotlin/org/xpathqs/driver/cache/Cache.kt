@@ -24,6 +24,7 @@ abstract class Cache : ICache {
     override fun getElementsCount(xpath: String) = evaluator.evalNodes(xpath).size
 
     override fun getAttribute(xpath: String, name: String) = attributeEvaluator.getAttribute(xpath, name)
+    override fun getAttributes(xpath: String) = attributeEvaluator.getAttributes(xpath)
 
     override fun getAttributes(xpath: String, name: String) = attributeEvaluator.getAttributes(xpath, name)
 }

@@ -4,7 +4,10 @@ import org.xpathqs.driver.cache.ICache
 
 open class MkCache : ICache {
     override fun update(xml: String) {
+    }
 
+    override fun getAttributes(xpath: String): Collection<Pair<String, String>> {
+        return emptyList()
     }
 
     override fun isPresent(xpath: String): Boolean {

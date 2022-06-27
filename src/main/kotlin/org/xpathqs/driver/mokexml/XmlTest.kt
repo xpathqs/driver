@@ -36,7 +36,7 @@ open class XmlTest(
         Log.info("Finish init log")
     }
 
-    fun refreshCache(path: String) {
+    open fun refreshCache(path: String) {
         val xml = getResourceAsText(path)
         executor = MockCachedExecutor(xml, cache)
         navigator.init(executor)
@@ -77,6 +77,6 @@ open class XmlTest(
     fun count(sel: ISelector)
         = executor.getElementsCount(sel)
 
-    val currentPage: Page
+    open val currentPage: Page
         get() = navigator.currentPage as Page
 }

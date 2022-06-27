@@ -114,6 +114,14 @@ open class CachedExecutor(
         }
     }
 
+    override fun getAllAttrs(selector: BaseSelector): Collection<Pair<String, String>> {
+        return Log.action("Get all attributes of '${selector}'") {
+            Log.xpath(selector)
+            checkCache()
+            cache.getAttributes(selector.toXpath())
+        }
+    }
+
     override fun getAttrs(selector: BaseSelector, attr: String): Collection<String> {
         return Log.action("Get all '$attr' of '${selector}'") {
             Log.xpath(selector)
@@ -136,7 +144,7 @@ open class CachedExecutor(
 
     override fun afterAction(action: IAction) {
         super.afterAction(action)
-        if(action is SelectorInteractionAction && action !is WaitAction) {
+        if(action is SelectorInteractionAction && action !is MakeVisibleAction) {
             invalidateCache()
         } else {
             needRefreshCache = false

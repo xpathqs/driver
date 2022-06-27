@@ -13,12 +13,13 @@ import org.xpathqs.driver.extensions.click
 import org.xpathqs.driver.extensions.isVisible
 import org.xpathqs.driver.navigation.annotations.UI
 import org.xpathqs.driver.navigation.base.IBlockSelectorNavigation
+import org.xpathqs.driver.navigation.base.INavigator
 import org.xpathqs.driver.widgets.IFormSelect
 
 class SelectableNavigation(
     private val base: IBlockSelectorNavigation
 ): IBlockSelectorNavigation {
-    override fun navigate(elem: ISelector) {
+    override fun navigate(elem: ISelector, navigator: INavigator) {
         if(elem is BaseSelector) {
             val selectable = (elem.rootParent as? Block)?.allInnerSelectors?.firstOrNull {
                 it.hasAnnotation(UI.Widgets.Selectable::class)
@@ -40,6 +41,6 @@ class SelectableNavigation(
             }
         }
 
-        return base.navigate(elem)
+        return base.navigate(elem, navigator)
     }
 }
