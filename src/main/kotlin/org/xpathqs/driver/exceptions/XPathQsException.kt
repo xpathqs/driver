@@ -3,7 +3,7 @@ package org.xpathqs.driver.exceptions
 import org.xpathqs.driver.actions.IAction
 import org.xpathqs.driver.executor.IExecutor
 import org.xpathqs.driver.page.Page
-import org.xpathqs.driver.widgets.IBaseModel
+import org.xpathqs.driver.model.IBaseModel
 
 open class XPathQsException(
     msg: String

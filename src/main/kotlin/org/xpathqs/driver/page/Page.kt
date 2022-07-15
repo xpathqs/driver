@@ -25,11 +25,3 @@ open class Page(
         return name.hashCode()
     }
 }
-
-fun main() {
-    val str = "asd.Global"
-    println(str.matches(".*\\bGlobal\\b.*".toRegex())) //false
-
-    println(str.matches(".*\\bto\\b.*".toRegex())) //true
-
-}

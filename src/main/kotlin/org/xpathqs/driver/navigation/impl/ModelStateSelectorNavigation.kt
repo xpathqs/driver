@@ -1,15 +1,15 @@
 package org.xpathqs.driver.navigation.impl
 
-import org.xpathqs.core.selector.base.*
+import org.xpathqs.core.selector.base.BaseSelector
+import org.xpathqs.core.selector.base.ISelector
+import org.xpathqs.core.selector.base.findAnnotation
 import org.xpathqs.core.selector.extensions.parents
 import org.xpathqs.driver.extensions.waitForVisible
+import org.xpathqs.driver.model.IBaseModel
 import org.xpathqs.driver.navigation.annotations.UI
 import org.xpathqs.driver.navigation.base.IBlockSelectorNavigation
-import org.xpathqs.driver.navigation.base.ILoadableDelegate
 import org.xpathqs.driver.navigation.base.IModelBlock
 import org.xpathqs.driver.navigation.base.INavigator
-import org.xpathqs.driver.widgets.IBaseModel
-import kotlin.reflect.full.createInstance
 
 class ModelStateSelectorNavigation(
     private val base: IBlockSelectorNavigation

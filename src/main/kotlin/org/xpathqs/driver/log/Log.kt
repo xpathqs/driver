@@ -3,6 +3,7 @@ package org.xpathqs.driver.log
 import org.xpathqs.core.selector.base.ISelector
 import org.xpathqs.driver.actions.IAction
 import org.xpathqs.log.BaseLogger
+import org.xpathqs.log.abstracts.ILogRestrictions
 import org.xpathqs.log.annotations.LoggerBridge
 import org.xpathqs.log.message.decorators.AttachmentMessage
 import org.xpathqs.log.style.StyleFactory
@@ -84,6 +85,26 @@ object Log {
     fun <T> action(msg: StyledBlock, tag: String = "action", lambda: () -> T) = action(StyledString(msg), tag, lambda)
     fun <T> action(msg: StyledString, tag: String = "action", lambda: () -> T): T {
         return log.action(msg, tag, lambda = lambda)
+    }
+
+    fun <T> step(restrictions: Collection<ILogRestrictions> = emptyList(), lambda: () -> T): T {
+       return  log.step(restrictions, lambda)
+    }
+
+    fun <T> step(msg: String, restrictions: Collection<ILogRestrictions> = emptyList(), lambda: () -> T)
+            = step(StyledString(msg), "step", restrictions, lambda)
+
+    fun <T> step(msg: StyledString, restrictions: Collection<ILogRestrictions> = emptyList(), lambda: () -> T)
+            = step(msg, "step", restrictions, lambda)
+
+    fun <T> step(msg: String, tag: String = "step", restrictions: Collection<ILogRestrictions> = emptyList(), lambda: () -> T)
+            = step(StyledString(msg), tag, restrictions, lambda)
+
+    fun <T> step(msg: StyledBlock, tag: String = "step", restrictions: Collection<ILogRestrictions> = emptyList(), lambda: () -> T)
+            = step(StyledString(msg), tag, restrictions, lambda)
+
+    fun <T> step(msg: StyledString, tag: String = "step", restrictions: Collection<ILogRestrictions> = emptyList(), lambda: () -> T): T {
+       return log.step(msg, tag, restrictions, lambda = lambda)
     }
 
     fun <T> action(action: IAction, tag: String = "action", lambda: () -> T): T {

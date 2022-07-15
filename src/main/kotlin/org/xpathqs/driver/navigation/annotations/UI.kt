@@ -2,7 +2,6 @@ package org.xpathqs.driver.navigation.annotations
 
 import org.xpathqs.core.selector.base.BaseSelector
 import org.xpathqs.core.selector.block.Block
-import org.xpathqs.driver.widgets.IBaseModel
 import kotlin.reflect.KClass
 
 class UI {

@@ -51,19 +51,3 @@ open class NearSelector(
     override val tag: String = baseSelector.tag
 }
 
-/*
-fun main() {
-    println(
-        NearSelector(
-            XmlCache(),
-            tagSelector()[
-                    ContainsDecorator(
-                        CommaDecorator(
-                            KVSelectorArg("class", "Organic-Subtitle")
-                        )
-                    )
-            ].freeze(),
-            textContainsSelector("светодиодные панели, светильники и лампы").freeze()
-        ).toXpath()
-    )
-}*/

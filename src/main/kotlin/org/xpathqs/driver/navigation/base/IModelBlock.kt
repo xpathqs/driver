@@ -1,13 +1,10 @@
 package org.xpathqs.driver.navigation.base
 
-import org.xpathqs.core.selector.base.findAnyParentAnnotation
 import org.xpathqs.core.selector.block.Block
 import org.xpathqs.core.selector.block.allInnerSelectorBlocks
 import org.xpathqs.core.selector.extensions.parents
 import org.xpathqs.core.selector.extensions.rootParent
-import org.xpathqs.driver.navigation.annotations.UI
-import org.xpathqs.driver.widgets.IBaseModel
-import kotlin.reflect.full.createInstance
+import org.xpathqs.driver.model.IBaseModel
 
 interface IModelBlock<T: IBaseModel> {
     operator fun invoke(): T

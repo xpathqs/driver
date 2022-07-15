@@ -35,7 +35,7 @@ open class Navigator() : INavigator {
     fun register(page: INavigable) {
         page as ISelector
         if(!pages.contains(page)) {
-            Log.info(selectorName(page.name) + " was added to the " + keyword(this::class.simpleName!!))
+            //Log.info(selectorName(page.name) + " was added to the " + keyword(this::class.simpleName!!))
             if(page is Page && page is INavigableDetermination) {
                 pages.add(page)
             } else if(page is Block) {
@@ -54,7 +54,7 @@ open class Navigator() : INavigator {
     }
 
     fun addEdge(edge: Edge) {
-        Log.info("Call addEdge to the: " + this)
+        //Log.info("Call addEdge to the: " + this)
         if(!edges.contains(edge)) {
             val newEdge = graph.addEdge(edge.from, edge.to)
             newEdge.from = edge.from
@@ -62,7 +62,7 @@ open class Navigator() : INavigator {
             newEdge.action = edge.action
             edges.add(newEdge)
             graph.setEdgeWeight(newEdge, edge._weight)
-            Log.info("Adge was edded: $edge")
+            //Log.info("Adge was edded: $edge")
         }
     }
 
@@ -143,7 +143,7 @@ open class Navigator() : INavigator {
             val cp = currentPage
             if((it.to is INavigableDetermination && it.to is Page) && it.to != cp) {
                 if((cp as? Block)?.hasAnnotation(UI.Nav.Autoclose::class) == true) {
-                    println("close page!")
+                    //println("close page!")
                 }
                 throw Exception("Wrong page")
             }

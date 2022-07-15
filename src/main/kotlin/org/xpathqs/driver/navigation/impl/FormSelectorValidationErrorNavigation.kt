@@ -1,12 +1,13 @@
 package org.xpathqs.driver.navigation.impl
 
-import org.xpathqs.core.selector.base.*
+import org.xpathqs.core.selector.base.BaseSelector
+import org.xpathqs.core.selector.base.ISelector
+import org.xpathqs.core.selector.base.hasAnnotation
 import org.xpathqs.core.selector.extensions.parents
 import org.xpathqs.driver.navigation.annotations.UI
 import org.xpathqs.driver.navigation.base.IBlockSelectorNavigation
 import org.xpathqs.driver.navigation.base.IModelBlock
 import org.xpathqs.driver.navigation.base.INavigator
-import kotlin.reflect.full.createInstance
 
 class FormSelectorValidationErrorNavigation(
     private val base: IBlockSelectorNavigation
