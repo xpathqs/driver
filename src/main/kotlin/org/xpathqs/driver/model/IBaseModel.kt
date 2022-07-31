@@ -2,6 +2,7 @@ package org.xpathqs.driver.model
 
 import org.apache.commons.lang3.ClassUtils
 import org.xpathqs.core.selector.base.BaseSelector
+import org.xpathqs.core.selector.base.ISelector
 import org.xpathqs.core.selector.base.findAnnotation
 import org.xpathqs.core.selector.base.findParentWithAnnotation
 import org.xpathqs.core.selector.block.Block
@@ -127,7 +128,7 @@ open class IBaseModel(
         submitCalled = false
 
       //  if(!propTrig) {
-            fill()
+            fill(other = modelFromUi)
       //  }
         beforeSubmit()
         if(!submitCalled) {
@@ -198,7 +199,7 @@ open class IBaseModel(
 
     private var checkFilled = false
 
-    open fun fill(prop: KMutableProperty<*>, other: IBaseModel? = null) {
+    open fun fill(prop: KProperty<*>, other: IBaseModel? = null) {
         Log.action("fill the ${prop.name}") {
             val parent = findParent(this, prop)
 
@@ -241,6 +242,7 @@ open class IBaseModel(
                     }
                 }
             } else {
+                prop as KMutableProperty
                 Log.action("Set $v to the ${parent?.toString()}") {
                     prop.setter.call(parent, v)
                 }
@@ -451,10 +453,12 @@ open class IBaseModel(
         obj::class.memberProperties.filter {
             it.returnType.javaType.typeName.startsWith(obj::class.jvmName)
         }.forEach {
-            val v = it.getter.call(this)!!
-            res.addAll(
-                allProperties(v)
-            )
+            val v = it.getter.call(this)
+            if(v != null) {
+                res.addAll(
+                    allProperties(v)
+                )
+            }
         }
 
         if (res.isEmpty() && obj::class.declaredMemberProperties.isNotEmpty()) {
@@ -808,7 +812,9 @@ open class IBaseModel(
                         ModelProperty(
                             name = sel.name,
                             value = v,
-                            annotations = prop.annotations
+                            annotations = prop.annotations,
+                            prop = prop,
+                            sel = sel
                         )
                     )
                 }
@@ -849,7 +855,9 @@ open class IBaseModel(
 data class ModelProperty(
     val name: String,
     val value: String,
-    val annotations: Collection<Annotation>
+    val annotations: Collection<Annotation>,
+    val prop: KProperty<*>,
+    val sel: ISelector
 )
 
 val KProperty<*>.isPrimitive: Boolean
@@ -867,8 +875,7 @@ val <T : IBaseModel> T.modelFromUi :T
     get() {
         return this.ignoreUpdateModel {
             val model = if(this.view is IModelBlock<*>) (this.view as IModelBlock<*>).getFromUi() else this
-            model.readFromUI()
-            clone(model) as T
+            clone(model).readFromUI() as T
         }
     }
 

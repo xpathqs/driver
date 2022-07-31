@@ -24,6 +24,15 @@ class Model {
         )
         @Retention(AnnotationRetention.RUNTIME)
         annotation class Ignore
+
+        @Target(
+            AnnotationTarget.FIELD,
+            AnnotationTarget.PROPERTY,
+        )
+        @Retention(AnnotationRetention.RUNTIME)
+        annotation class Items(
+            val items: Array<String>
+        )
     }
 
     @Target(

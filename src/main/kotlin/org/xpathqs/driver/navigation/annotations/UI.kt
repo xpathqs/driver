@@ -116,7 +116,8 @@ class UI {
         @Retention(AnnotationRetention.RUNTIME)
         annotation class Dynamic(
             val modelState: Int = UNDEF_STATE,
-            val modelDepends: Int = UNDEF_STATE
+            val modelDepends: Int = UNDEF_STATE,
+            val overlapped: Boolean = false
         )
 
         @Target(

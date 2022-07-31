@@ -13,20 +13,21 @@ enum class InputType{
 
 open class InputAction(
     val type: InputType = InputType.SUBMIT,
-    val props: Collection<KProperty<*>> = emptyList()) {
+    val props: Collection<KProperty<*>> = emptyList()
+) {
 
     companion object {
-        fun submit(obj: Any) = submit(obj::class)
+        fun submit(obj: Any?) = submit(obj!!::class)
         fun submit(cls: KClass<*>) = submit(*cls.memberProperties.filterIsInstance<KMutableProperty<*>>().toTypedArray())
         fun submit(vararg props: KProperty<*>)
                 = InputAction(InputType.SUBMIT, listOf(*props))
 
-        fun input(obj: Any) = input(obj::class)
-        fun input(cls: KClass<*>) = input(*cls.memberProperties.filterIsInstance<KMutableProperty<*>>().toTypedArray())
+        fun input(obj: Any?) = input(if(obj == null) null else obj::class)
+        fun input(cls: KClass<*>?) = input(*cls?.memberProperties?.filterIsInstance<KMutableProperty<*>>()?.toTypedArray() ?: emptyArray())
         fun input(vararg props: KProperty<*>)
                 = InputAction(InputType.INPUT, listOf(*props))
 
-        fun click(obj: Any) = click(obj::class)
+        fun click(obj: Any?) = click(obj!!::class)
         fun click(cls: KClass<*>) = click(*cls.memberProperties.filterIsInstance<KMutableProperty<*>>().toTypedArray())
         fun click(vararg props: KProperty<*>)
                 = InputAction(InputType.CLICK, listOf(*props))
