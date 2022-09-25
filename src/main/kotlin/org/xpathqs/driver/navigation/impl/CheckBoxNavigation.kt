@@ -21,22 +21,36 @@ class CheckBoxNavigation(
 ): IBlockSelectorNavigation {
     override fun navigate(elem: ISelector, navigator: INavigator) {
         if(elem is BaseSelector) {
+            if(elem.isVisible) {
+                return
+            }
             val cb = (elem.rootParent as? Block)?.allInnerSelectors?.firstOrNull {
                 it.hasAnnotation(UI.Widgets.Checkbox::class)
             }
             if(cb != null && cb is CheckBox) {
                 val ann = cb.findAnnotation<UI.Widgets.Checkbox>()
                 if(ann != null) {
-                    val checkedBlock = ann.onChecked.objectInstance!!
-                    val uncheckedBlock = ann.onUnchecked.objectInstance!!
                     var wasFound = false
+                    if(ann.visibilityOf != Block::class) {
+                        val block = ann.visibilityOf.objectInstance
+                        if(block != null && elem.isChildOf(block)) {
+                            cb.check()
+                            wasFound = true
+                        }
 
-                    if(elem.isChildOf(checkedBlock)) {
-                        cb.check()
-                        wasFound = true
-                    } else if(elem.isChildOf(uncheckedBlock)) {
-                        cb.uncheck()
-                        wasFound = true
+                    } else {
+                        val checkedBlock = ann.onChecked.objectInstance
+                        val uncheckedBlock = ann.onUnchecked.objectInstance
+
+                        if(checkedBlock != null && uncheckedBlock != null) {
+                            if(elem.isChildOf(checkedBlock)) {
+                                cb.check()
+                                wasFound = true
+                            } else if(elem.isChildOf(uncheckedBlock)) {
+                                cb.uncheck()
+                                wasFound = true
+                            }
+                        }
                     }
 
                     if(wasFound) {

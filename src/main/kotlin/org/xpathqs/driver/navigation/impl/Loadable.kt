@@ -1,7 +1,10 @@
 package org.xpathqs.driver.navigation.impl
 
 import org.xpathqs.core.selector.block.Block
+import org.xpathqs.core.selector.compose.ComposeSelector
+import org.xpathqs.core.util.SelectorFactory.compose
 import org.xpathqs.driver.extensions.isHidden
+import org.xpathqs.driver.extensions.waitForFirstVisibleOf
 import org.xpathqs.driver.extensions.waitForVisible
 import org.xpathqs.driver.log.Log
 import org.xpathqs.driver.navigation.base.ILoadable
@@ -28,12 +31,14 @@ open class Loadable(private val block: Block) : ILoadable {
                 if(loading.loadSelector!!.isHidden) {
                     Log.error("Страница не была загружена")
                 }
-            } else if(loading.loadSelectors.isNotEmpty()) {
-                loading.loadSelectors.forEach {
-                    if(it.isHidden) {
+            } else if(loading.loadAllSelectors.isNotEmpty()) {
+                loading.loadAllSelectors.forEach {
+                    if (it.isHidden) {
                         it.waitForVisible(duration)
                     }
                 }
+            } else if(loading.loadAnySelectors.isNotEmpty()) {
+                loading.loadAnySelectors.waitForFirstVisibleOf(duration)
             } else {
                 Log.warning("No Load Selector defined")
             }

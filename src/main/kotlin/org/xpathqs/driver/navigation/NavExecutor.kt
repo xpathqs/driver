@@ -1,5 +1,6 @@
 package org.xpathqs.driver.navigation
 
+import org.jgrapht.GraphPath
 import org.xpathqs.core.selector.base.BaseSelector
 import org.xpathqs.core.selector.base.findAnnotation
 import org.xpathqs.core.selector.base.findParentWithAnnotation
@@ -26,6 +27,7 @@ import org.xpathqs.driver.log.Log
 import org.xpathqs.driver.navigation.annotations.NavOrderType
 import org.xpathqs.driver.navigation.annotations.UI
 import org.xpathqs.driver.navigation.base.*
+import org.xpathqs.driver.navigation.impl.Navigable
 import org.xpathqs.driver.page.Page
 import java.time.Duration
 
@@ -68,7 +70,7 @@ open class NavExecutor(
 
                             curPage = navigator.currentPage
                         }
-                        navigator.navigate(curPage, sourcePage)
+                        navigator.navigate(NavWrapper(curPage), NavWrapper.get(sourcePage))
                     }
 
                     val endPage = navigator.currentPage as Page
@@ -82,7 +84,11 @@ open class NavExecutor(
                 }
 
                 if(action.on.isHidden) {
-                    val navigations = navigator.findPath(curPage, action.on.base as? INavigable)
+                    var navigations: GraphPath<NavWrapper, Edge>? =
+                        if(action.on.base is INavigable) {
+                            navigator.findPath(NavWrapper(curPage), NavWrapper.get(action.on.base as INavigable))
+                        } else null
+
                     if(navigations != null) {
                         navigations.edgeList.forEach {
                             if(it.action != null) {
@@ -90,7 +96,7 @@ open class NavExecutor(
                                 Thread.sleep(500)
                                 (origin as? CachedExecutor)?.refreshCache()
                             }
-                            (it.to as? ILoadable)?.waitForLoad(Duration.ofSeconds(30))
+                            (it.to.nav as? ILoadable)?.waitForLoad(Duration.ofSeconds(30))
                         }
                     } else {
                         action.on.parents.filterIsInstance<IBlockSelectorNavigation>()?.firstOrNull()?.let {
@@ -98,15 +104,26 @@ open class NavExecutor(
                         }
                     }
                 }
-            }
 
+                processBeforeActionExtensions(action)
+            }
         }
+    }
+
+    override fun afterAction(action: IAction) {
+        super.afterAction(action)
+        processAfterActionExtensions(action)
     }
 
     protected fun executeAction(action: MakeVisibleAction) {
     //    beforeAction(action)
-       /* if(action.on.rootParent is INavigableDetermination) {
 
+       /* val sel = action.on
+        if(sel.isHidden) {
+            val root = sel.rootParent
+            if(root is IBlockSelectorNavigation) {
+                root.navigate(sel, navigator)
+            }
         }*/
     }
 

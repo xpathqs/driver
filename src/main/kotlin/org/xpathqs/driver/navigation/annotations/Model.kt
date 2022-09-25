@@ -16,6 +16,13 @@ class Model {
             AnnotationTarget.PROPERTY,
         )
         @Retention(AnnotationRetention.RUNTIME)
+        annotation class Number
+
+        @Target(
+            AnnotationTarget.FIELD,
+            AnnotationTarget.PROPERTY,
+        )
+        @Retention(AnnotationRetention.RUNTIME)
         annotation class Currency
 
         @Target(

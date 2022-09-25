@@ -5,13 +5,18 @@ import org.xpathqs.core.selector.block.allInnerSelectorBlocks
 import org.xpathqs.core.selector.extensions.parents
 import org.xpathqs.core.selector.extensions.rootParent
 import org.xpathqs.driver.model.IBaseModel
+import org.xpathqs.driver.model.IModelStates
 
 interface IModelBlock<T: IBaseModel> {
     operator fun invoke(): T
 
     operator fun invoke(state: Int): T {
-        val m = invoke()
-        return m.states[state] as? T ?: m
+        return if(this is IModelStates) {
+            states[state] as T
+        } else {
+            val m = invoke()
+            m.states[state] as? T ?: m
+        }
     }
 
     open fun getFromUi(): T {

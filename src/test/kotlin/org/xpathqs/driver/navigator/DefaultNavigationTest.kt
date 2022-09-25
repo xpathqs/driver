@@ -49,6 +49,7 @@ class DefaultNavigationTest {
             .scan()
         navigator.initNavigations()
     }
+/*
 
     @Test
     fun test1() {
@@ -85,6 +86,7 @@ class DefaultNavigationTest {
             "[(Determination3 : Determination1)]"
         }
     }
+*/
 
     @Test
     fun testDetermination() {

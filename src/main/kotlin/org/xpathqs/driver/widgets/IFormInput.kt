@@ -6,4 +6,7 @@ interface IFormInput {
     fun isDisabled(): Boolean {
         return false
     }
+    fun isValidationError(): Boolean {
+        return false
+    }
 }

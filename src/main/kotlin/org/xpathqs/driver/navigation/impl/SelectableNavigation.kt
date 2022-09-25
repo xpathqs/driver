@@ -21,6 +21,9 @@ class SelectableNavigation(
 ): IBlockSelectorNavigation {
     override fun navigate(elem: ISelector, navigator: INavigator) {
         if(elem is BaseSelector) {
+            if(elem.isVisible) {
+                return
+            }
             val selectable = (elem.rootParent as? Block)?.allInnerSelectors?.firstOrNull {
                 it.hasAnnotation(UI.Widgets.Selectable::class)
             }
@@ -35,7 +38,9 @@ class SelectableNavigation(
                             (elem.rootParent as? Block)?.findWithAnnotation(UI.Widgets.Submit::class)?.click()
                         }
 
-                        return
+                        if(elem.isVisible) {
+                            return
+                        }
                     }
                 }
             }

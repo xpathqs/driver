@@ -4,13 +4,20 @@ import org.xpathqs.core.reflection.freeze
 import org.xpathqs.core.selector.base.BaseSelector
 import org.xpathqs.core.selector.base.ISelector
 import org.xpathqs.core.selector.extensions.core.clone
+import org.xpathqs.core.selector.extensions.parents
 import org.xpathqs.core.selector.selector.Selector
 import org.xpathqs.driver.actions.*
+import org.xpathqs.driver.actions.SelectorInteractionAction.Companion.AFTER_ACTION_DELAY
+import org.xpathqs.driver.actions.SelectorInteractionAction.Companion.AFTER_ACTION_LAMBDA
+import org.xpathqs.driver.actions.SelectorInteractionAction.Companion.AFTER_ACTION_WAIT
+import org.xpathqs.driver.actions.SelectorInteractionAction.Companion.BEFORE_ACTION_DELAY
+import org.xpathqs.driver.actions.SelectorInteractionAction.Companion.BEFORE_ACTION_LAMBDA
 import org.xpathqs.driver.constants.Global
 import org.xpathqs.driver.executor.CachedExecutor
 import org.xpathqs.driver.page.Page
 import org.xpathqs.driver.selector.NearSelector
 import org.xpathqs.driver.selector.SecretInput
+import org.xpathqs.driver.widgets.IFormInput
 import java.lang.Exception
 import java.time.Duration
 
@@ -71,8 +78,22 @@ fun <T : BaseSelector> T.click(moveMouse: Boolean = false): T {
 }
 
 fun <T : BaseSelector> T.input(value: String, clear: Boolean = true): T {
+    val beforeDelay = this.customPropsMap[BEFORE_ACTION_DELAY] as? Duration
+        ?: (this.parents.filterIsInstance<IFormInput>().firstOrNull() as? BaseSelector)?.customPropsMap?.get(BEFORE_ACTION_DELAY) as? Duration
+        ?: Duration.ZERO
+
+    val afterDelay = this.customPropsMap[AFTER_ACTION_DELAY] as? Duration
+        ?: (this.parents.filterIsInstance<IFormInput>().firstOrNull() as? BaseSelector)?.customPropsMap?.get(AFTER_ACTION_DELAY) as? Duration
+        ?: Duration.ZERO
+
     Global.executor.execute(
-        InputAction(value, this, clear)
+        InputAction(
+            text = value,
+            to = this,
+            clearBeforeInput = clear,
+            beforeActionDelay = beforeDelay,
+            afterActionDelay = afterDelay
+        )
     )
     return this
 }
@@ -93,6 +114,9 @@ fun <T : BaseSelector> T.clear(): T {
 
 val <T : BaseSelector> T.text: String
     get() = getAttr(Global.TEXT_ARG)
+
+val <T : BaseSelector> T.int: Int?
+    get() = text.filter { it.isDigit() }.toIntOrNull()
 
 val <T : BaseSelector> T.textItems: Collection<String>
     get() = getAttrs(Global.TEXT_ARG)
@@ -150,3 +174,33 @@ infix fun <T : BaseSelector> T.near(sel: Selector): NearSelector {
     //}
    // throw Exception("Near works only for CachedExecutors")
 }
+
+fun <T : BaseSelector> T.afterActionDelay(duration: Duration): T {
+    this.customPropsMap[AFTER_ACTION_DELAY] = duration
+    return this
+}
+
+fun <T : BaseSelector> T.beforeActionDelay(duration: Duration): T {
+    this.customPropsMap[BEFORE_ACTION_DELAY] = duration
+    return this
+}
+
+fun <T : BaseSelector> T.beforeAction(lambda: ()->Unit): T {
+    this.customPropsMap[BEFORE_ACTION_LAMBDA] = lambda
+    return this
+}
+
+fun <T : BaseSelector> T.afterAction(lambda: ()->Unit): T {
+    this.customPropsMap[AFTER_ACTION_LAMBDA] = lambda
+    return this
+}
+/*
+
+fun <T : BaseSelector> T.afterActionWait(sel: BaseSelector, duration: Duration = Duration.ofSeconds(10)): T {
+    return afterActionWait(listOf(sel), duration)
+}
+
+fun <T : BaseSelector> T.afterActionWait(sel: List<BaseSelector>, duration: Duration = Duration.ofSeconds(10)): T {
+    this.customPropsMap[AFTER_ACTION_WAIT] = sel to duration
+    return this
+}*/

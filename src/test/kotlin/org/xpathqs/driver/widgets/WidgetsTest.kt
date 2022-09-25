@@ -2,14 +2,13 @@ package org.xpathqs.driver.widgets
 
 import org.junit.jupiter.api.Test
 import org.xpathqs.core.reflection.scanPackage
-import org.xpathqs.core.selector.base.BaseSelector
 import org.xpathqs.core.selector.block.Block
 import org.xpathqs.core.util.SelectorFactory.tagSelector
 import org.xpathqs.core.util.SelectorFactory.textSelector
+import org.xpathqs.driver.model.IBaseModel
 import org.xpathqs.driver.navigation.annotations.UI
 import org.xpathqs.driver.page.Page
 import org.xpathqs.gwt.WHEN
-import kotlin.reflect.KProperty
 
 class LoginModel() : IBaseModel() {
 

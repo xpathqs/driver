@@ -6,14 +6,14 @@ interface INavigableDelegate: INavigable {
     override fun initNavigation() {
         nav.initNavigation()
     }
-    override fun addNavigation(to: INavigable, order: Int, action: (() -> Unit)?) {
-        nav.addNavigation(to, order, action)
+    override fun addNavigation(to: INavigable, order: Int, selfState: Int, state: Int, action: (() -> Unit)?) {
+        nav.addNavigation(to, order, selfState, state, action)
     }
 
     override val navOrder: Int
         get() = nav.navOrder
 
-    override fun navigate() {
-        nav.navigate()
+    override fun navigate(state: Int) {
+        nav.navigate(state)
     }
 }

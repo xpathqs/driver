@@ -5,13 +5,17 @@ import org.xpathqs.core.selector.base.ISelector
 import org.xpathqs.driver.core.IDriver
 import org.xpathqs.driver.actions.IAction
 import org.xpathqs.driver.actions.SelectorInteractionAction
+import org.xpathqs.driver.actions.SelectorInteractionAction.Companion.AFTER_ACTION_LAMBDA
+
 import org.xpathqs.driver.actions.WaitAction
 import org.xpathqs.driver.actions.WaitForSelectorAction
 import org.xpathqs.driver.constants.Global
 import org.xpathqs.driver.constants.Messages
 import org.xpathqs.driver.exceptions.XPathQsException
+import org.xpathqs.driver.extensions.waitForFirstVisibleOf
 import org.xpathqs.driver.log.Log
 import org.xpathqs.log.style.StyledString
+import java.time.Duration
 
 open class Executor(
     override val driver: IDriver
@@ -79,7 +83,23 @@ open class Executor(
                 Global.executor.execute(
                     WaitForSelectorAction(action.on)
                 )
+
+                processBeforeActionExtensions(action)
+
                 Log.xpath(action.on)
+            }
+        }
+    }
+
+    override fun afterAction(action: IAction) {
+        if(action is SelectorInteractionAction) {
+            Log.action(
+                StyledString.fromDefaultFormatString(
+                    Messages.Executor.afterAction,
+                    action.on.name
+                ), "debug"
+            ) {
+                processAfterActionExtensions(action)
             }
         }
     }

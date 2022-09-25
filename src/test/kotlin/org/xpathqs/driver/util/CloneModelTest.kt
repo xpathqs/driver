@@ -8,10 +8,11 @@ import assertk.assertions.isSameAs
 import org.junit.jupiter.api.Test
 import org.xpathqs.core.reflection.PackageScanner
 import org.xpathqs.core.util.SelectorFactory.tagSelector
+import org.xpathqs.driver.model.IBaseModel
+import org.xpathqs.driver.model.clone
 import org.xpathqs.driver.navigation.base.IModelBlock
 import org.xpathqs.driver.page.Page
-import org.xpathqs.driver.widgets.IBaseModel
-import org.xpathqs.driver.widgets.clone
+
 import org.xpathqs.gwt.GIVEN
 import kotlin.properties.Delegates
 

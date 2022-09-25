@@ -17,6 +17,9 @@ class FormSelectorSelectOptionNavigation(
 ): IBlockSelectorNavigation {
     override fun navigate(elem: ISelector, navigator: INavigator) {
         if(elem is BaseSelector) {
+            if(elem.isVisible) {
+                return
+            }
             if(elem.hasAnnotation(UI.Widgets.OptionItem::class)) {
                 if(elem.base is Block) {
                     (elem.base as Block).findWithAnnotation(UI.Widgets.Select::class)?.click()

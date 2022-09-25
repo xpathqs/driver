@@ -4,8 +4,10 @@ import org.xpathqs.core.selector.base.BaseSelector
 import org.xpathqs.core.selector.base.ISelector
 import org.xpathqs.driver.core.IDriver
 import org.xpathqs.driver.actions.IAction
+import org.xpathqs.driver.actions.SelectorInteractionAction
 import org.xpathqs.driver.exceptions.XPathQsException
 import org.xpathqs.driver.log.Log
+import java.time.Duration
 
 open class Decorator(
     protected val origin: IExecutor
@@ -79,4 +81,6 @@ open class Decorator(
             throw XPathQsException.ActionNotFound(action, this)
         }
     }
+
+
 }

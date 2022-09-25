@@ -25,6 +25,7 @@ package org.xpathqs.driver.util
 import org.xpathqs.core.selector.base.BaseSelector
 import org.xpathqs.core.selector.block.Block
 import java.lang.reflect.Constructor
+import kotlin.reflect.KClass
 import kotlin.reflect.KProperty
 import kotlin.reflect.jvm.javaField
 
@@ -133,11 +134,16 @@ internal fun <T : Any> T.newInstance(): T {
 /**
  * @return constructor with provided parameterCount
  */
-private fun Any.getConstructor(parameterCount: Int): Constructor<*> {
-    val c = this::class.java.declaredConstructors.find {
+fun Any.getConstructor(parameterCount: Int): Constructor<*> {
+    val cls = when(this) {
+        is KClass<*> -> java
+        is Class<*> -> this
+        else -> this::class.java
+    }
+    val constructor = cls.declaredConstructors.find {
         it.parameterCount == parameterCount
     } ?: throw IllegalArgumentException("Selector doesn't have a default constructor with $parameterCount parameter")
 
-    c.isAccessible = true
-    return c
+    constructor.isAccessible = true
+    return constructor
 }

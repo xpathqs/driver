@@ -21,6 +21,9 @@ class ClickToBackNavigation(
 ): IBlockSelectorNavigation {
     override fun navigate(elem: ISelector, navigator: INavigator) {
         if(elem is BaseSelector) {
+            if(elem.isVisible) {
+                return
+            }
             val cp = navigator.currentPage
             if(cp !== elem.rootParent) {
                 (cp as? Block)?.allInnerSelectors?.firstOrNull {

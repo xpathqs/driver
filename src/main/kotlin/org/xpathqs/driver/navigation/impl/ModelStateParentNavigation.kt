@@ -2,6 +2,7 @@ package org.xpathqs.driver.navigation.impl
 
 import org.xpathqs.core.selector.base.*
 import org.xpathqs.core.selector.extensions.parents
+import org.xpathqs.driver.extensions.isVisible
 import org.xpathqs.driver.extensions.waitForVisible
 import org.xpathqs.driver.navigation.annotations.UI
 import org.xpathqs.driver.navigation.base.IBlockSelectorNavigation
@@ -15,12 +16,17 @@ class ModelStateParentNavigation(
 ): IBlockSelectorNavigation {
     override fun navigate(elem: ISelector, navigator: INavigator) {
         if(elem is BaseSelector) {
+            if(elem.isVisible) {
+                return
+            }
             elem.findAnyParentAnnotation<UI.Visibility.Dynamic>()?.let { p ->
                 if(p.modelState >= 0) {
                     elem.parents.filterIsInstance<IModelBlock<*>>().firstOrNull()?.let {
                         it().submit(p.modelState)
                         elem.waitForVisible()
-                        return@navigate
+                        if(elem.isVisible) {
+                            return
+                        }
                     }
                 }
             }

@@ -18,6 +18,7 @@ object Messages {
 
     object Executor {
         val beforeAction = ""
+        val afterAction = ""
     }
 
     object NavExecutor {

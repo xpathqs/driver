@@ -2,9 +2,16 @@ package org.xpathqs.driver.executor
 
 import org.xpathqs.core.selector.base.BaseSelector
 import org.xpathqs.core.selector.base.ISelector
+import org.xpathqs.core.selector.extensions.parents
 import org.xpathqs.driver.core.IDriver
 import org.xpathqs.driver.actions.IAction
+import org.xpathqs.driver.actions.MakeVisibleAction
+import org.xpathqs.driver.actions.SelectorInteractionAction
+import org.xpathqs.driver.actions.WaitAction
 import org.xpathqs.driver.extensions.isHidden
+import org.xpathqs.driver.extensions.waitForFirstVisibleOf
+import org.xpathqs.driver.widgets.IFormInput
+import java.time.Duration
 
 typealias ActionExecLambda = (IAction) -> Unit
 typealias ActionExecMap = HashMap<String, ActionExecLambda>
@@ -30,4 +37,48 @@ interface IExecutor {
 
     val driver: IDriver
     val actions: ActionExecMap
+
+    fun processBeforeActionExtensions(action: IAction) {
+        if(action is SelectorInteractionAction && action !is WaitAction && action !is MakeVisibleAction) {
+            if(action.beforeActionDelay != Duration.ZERO) {
+                Thread.sleep(action.beforeActionDelay.toMillis())
+            }
+
+            getKeyFromPropsMap(action, SelectorInteractionAction.BEFORE_ACTION_DELAY)?.let {
+                it as Duration
+                execute(WaitAction(it))
+            }
+
+            getKeyFromPropsMap(action, SelectorInteractionAction.BEFORE_ACTION_LAMBDA)?.let { lambda ->
+                lambda as ()->Unit
+                lambda.invoke()
+            }
+        }
+    }
+
+    private fun getKeyFromPropsMap(action: IAction, key: String): Any? {
+        return if(action is SelectorInteractionAction) {
+            action.on.customPropsMap[key] ?:
+            (action.on.parents.filterIsInstance<IFormInput>()?.firstOrNull() as? BaseSelector)?.customPropsMap?.get(key)
+        } else null
+    }
+
+    fun processAfterActionExtensions(action: IAction) {
+        if(action is SelectorInteractionAction && action !is WaitAction && action !is MakeVisibleAction) {
+            getKeyFromPropsMap(action, SelectorInteractionAction.AFTER_ACTION_DELAY)?.let {
+                it as Duration
+                execute(WaitAction(it))
+            }
+
+            getKeyFromPropsMap(action, SelectorInteractionAction.AFTER_ACTION_LAMBDA)?.let { lambda ->
+                lambda as ()->Unit
+                lambda.invoke()
+            }
+
+            getKeyFromPropsMap(action, SelectorInteractionAction.AFTER_ACTION_WAIT)?.let { waitConfig ->
+                waitConfig as Pair<Collection<BaseSelector>, Duration>
+                waitConfig.first.waitForFirstVisibleOf(waitConfig.second)
+            }
+        }
+    }
 }

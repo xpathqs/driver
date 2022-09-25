@@ -17,7 +17,7 @@ open class InputAction(
 ) {
 
     companion object {
-        fun submit(obj: Any?) = submit(obj!!::class)
+        fun submit(obj: Any?) = if(obj == null) submit() else submit(obj!!::class)
         fun submit(cls: KClass<*>) = submit(*cls.memberProperties.filterIsInstance<KMutableProperty<*>>().toTypedArray())
         fun submit(vararg props: KProperty<*>)
                 = InputAction(InputType.SUBMIT, listOf(*props))
@@ -27,8 +27,8 @@ open class InputAction(
         fun input(vararg props: KProperty<*>)
                 = InputAction(InputType.INPUT, listOf(*props))
 
-        fun click(obj: Any?) = click(obj!!::class)
-        fun click(cls: KClass<*>) = click(*cls.memberProperties.filterIsInstance<KMutableProperty<*>>().toTypedArray())
+        fun click(obj: Any?) = click(if(obj == null) null else obj::class)
+        fun click(cls: KClass<*>?) = click(*cls?.memberProperties?.filterIsInstance<KMutableProperty<*>>()?.toTypedArray() ?: emptyArray())
         fun click(vararg props: KProperty<*>)
                 = InputAction(InputType.CLICK, listOf(*props))
 

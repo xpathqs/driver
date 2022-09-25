@@ -25,7 +25,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 version = "0.1.3"
 
 plugins {
-    kotlin("jvm") version "1.5.0"
+    kotlin("jvm") version "1.6.0"
     id("org.jetbrains.dokka") version "1.4.32"
     `java-library`
     jacoco
@@ -55,9 +55,8 @@ dependencies {
     api("org.xpathqs:log:0.1.3")
     api("org.xpathqs:prop:0.2.1")
     api("org.jgrapht:jgrapht-core:1.5.1")
-    implementation ("org.jetbrains.kotlin:kotlin-reflect:1.5.0")
+    implementation ("org.jetbrains.kotlin:kotlin-reflect:1.6.0")
     implementation(kotlin("stdlib"))
-    implementation("org.jetbrains.kotlin:kotlin-reflect:1.5.0")
 
     implementation("org.apache.commons:commons-lang3:3.12.0")
 

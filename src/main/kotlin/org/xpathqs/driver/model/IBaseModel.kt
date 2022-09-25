@@ -19,6 +19,7 @@ import org.xpathqs.driver.navigation.annotations.Model
 import org.xpathqs.driver.navigation.annotations.UI
 import org.xpathqs.driver.navigation.base.*
 import org.xpathqs.driver.util.clone
+import org.xpathqs.driver.util.newInstance
 import org.xpathqs.driver.widgets.*
 import java.time.Duration
 import kotlin.properties.Delegates
@@ -41,7 +42,9 @@ open class IBaseModel(
 
     val mappingsDelegate = resetableLazy {
         val res = LinkedHashMap<KProperty<*>, BaseSelector>()
-        res.putAll(reflectionMappings)
+        if(useReflectionMappings) {
+            res.putAll(reflectionMappings)
+        }
         res.putAll(propArgsMappings)
 
         mappingsInitialized = true
@@ -51,17 +54,44 @@ open class IBaseModel(
     open val mappings: LinkedHashMap<KProperty<*>, BaseSelector>
         by mappingsDelegate
 
+    private val useReflectionMappings: Boolean
+        get() = !(isNullSelector && isDelegatesUsed)
+
+    private var isNullSelector: Boolean = false
+    private var isDelegatesUsed: Boolean = false
+
     open val reflectionMappings: LinkedHashMap<KProperty<*>, BaseSelector>
         by lazy {
             val res = LinkedHashMap<KProperty<*>, BaseSelector>()
 
-            val c = this::class.java.declaredFields
-            val orderById = c.withIndex().associate { it.value.name to it.index }
-            val p = this::class.declaredMemberProperties
-            val sorted = p.sortedBy { orderById[it.name] }
+            val fields = this::class.java.declaredFields
+            val orderById = fields.withIndex().associate { it.value.name to it.index }
+            val sorted = this::class.declaredMemberProperties.sortedBy { orderById[it.name] }
+
             sorted.forEach { p ->
-                view?.allInnerSelectors?.find { it.simpleName == p.name }?.let { s ->
-                    res[p] = s
+                if((p.returnType.javaType.typeName).startsWith(this.javaClass.name)) {
+                    val obj: Any? = try {
+                        p.call(this)
+                    } catch (e: Exception) {
+                        null
+                    }
+                    obj?.let{
+                        it.javaClass.kotlin.declaredMemberProperties.forEach { p ->
+                            view?.allInnerSelectors?.find {
+                                val selName = it.name.split(".").takeLast(2).joinToString(".")
+                                val modelName = p.toString().substringBeforeLast(":").split(".").takeLast(2).joinToString(".")
+                                selName == modelName
+                            }?.let { s ->
+                                res[p] = s
+                            }
+                        }
+                    }
+                } else {
+                    view?.allInnerSelectors?.find {
+                        it.simpleName == p.name
+                    }?.let { s ->
+                        res[p] = s
+                    }
                 }
             }
             res
@@ -69,7 +99,7 @@ open class IBaseModel(
 
     open val propArgsMappings: LinkedHashMap<KProperty<*>, BaseSelector>
         by lazy {
-            ignoreUpdateModel {
+            applyModel {
                 allProperties().forEach { p ->
                     val parent = findParent(this, p)
                     try {
@@ -99,31 +129,38 @@ open class IBaseModel(
             if(it.annotations.find{ it.annotationClass == ann} != null) it else
             (it as? Block)?.findWithAnnotation(ann)
             ?: it.findParentWithAnnotation(ann)
-        }?.first()
+        }.first()
 
     open fun beforeSubmit() {}
     open fun afterSubmit() {}
 
     private val filledProps = HashSet<KProperty<*>>()
 
-   /* fun<T> updateModel(l: IBaseModel.()->T): T {
-        disableUiUpdate()
-        val r = this.l()
-        enableUiUpdate()
-        return r
-    }*/
+    open fun default() {
+    }
 
-    fun<T> ignoreUpdateModel(l: IBaseModel.()->T): T {
+    fun<T: IBaseModel> T.applyModel(l: T.()->Unit): T {
         val before = isInit.get() == true
         isInit.set(false)
 
-        val r = this.l()
+        (this).l()
+
+        isInit.set(before)
+        return this
+    }
+
+    fun<T> runInModel(l: IBaseModel.()->T): T {
+        val before = isInit.get() == true
+        isInit.set(false)
+
+        val r = (this).l()
 
         isInit.set(before)
         return r
     }
 
     private var submitCalled = false
+    @OptIn(ExperimentalStdlibApi::class)
     open fun submit() {
         submitCalled = false
 
@@ -165,6 +202,27 @@ open class IBaseModel(
             }
         }
     }
+
+    open val isFilled: Boolean
+        get() {
+            val newObj = this.newInstance()
+
+            mappings.keys.forEach {
+                val v = it.call(this)
+                if(v is String) {
+                    if(v.isEmpty()) {
+                        return true
+                    }
+                } else if(v is Boolean) {
+                    val defV = it.call(newObj)
+                    if(v != defV) {
+                        return true
+                    }
+                }
+            }
+
+            return false
+        }
 
     open fun invalidate(sel: BaseSelector) {
         val prop = findPropBySel(sel)!!
@@ -284,7 +342,7 @@ open class IBaseModel(
 
                         if(other != null) {
                             val parentOther = findParent(other, it)
-                            val v2 = it.getter.call(parentOther)
+                            val v2 = safeTry { it.getter.call(parentOther) }
                             if(!comporator.isEqual(it, v, v2)) {
                                 (it as KMutableProperty<*>).setter.call(parent, v)
                             }
@@ -329,7 +387,11 @@ open class IBaseModel(
         if(state == DEFAULT) {
             submit()
         } else {
-            states[state]?.submit()
+            if(view is IModelStates) {
+                view.states[state]?.submit()
+            } else {
+                states[state]?.submit()
+            }
         }
     }
 
@@ -488,14 +550,14 @@ open class IBaseModel(
                                 if(prop.getter.parameters.size == 1) {
                                     Log.info("getter has 1 param")
                                     val thiz = findParent(this@IBaseModel, prop)
-                                    if(vd!!.value is DefaultValue) {
+                                    if(vd.value is DefaultValue) {
                                         val v = prop.getter.call(thiz)
                                         Log.action("Default value(${v.toString()}) will be set") {
                                             prop.setter.call(thiz, v)
                                         }
                                     } else {
                                         Log.action("value(${vd.value}) will be set") {
-                                            prop.setter.call(thiz, vd!!.value)
+                                            prop.setter.call(thiz, vd.value)
                                         }
                                     }
                                     //     Thread.sleep(500)
@@ -504,14 +566,14 @@ open class IBaseModel(
                                     }
                                 } else {
                                     Log.info("getter has >1 params")
-                                    if(vd!!.value is DefaultValue) {
+                                    if(vd.value is DefaultValue) {
                                         val v = prop.getter.call()
                                         Log.action("Default value(${v.toString()}) will be set") {
                                             prop.setter.call(v)
                                         }
                                     } else {
                                         Log.action("value(${vd.value}) will be set") {
-                                            prop.setter.call(vd!!.value)
+                                            prop.setter.call(vd.value)
                                         }
                                     }
                                     //            Thread.sleep(500)
@@ -534,7 +596,7 @@ open class IBaseModel(
                                 if(vd != null && parentProp != null) {
                                     Log.action("Dependency was found for parent: ${parentProp.name}") {
                                         val member = this.valueDependency.find { vd ->
-                                            vd.source.find { it.name == parentProp?.name } != null
+                                            vd.source.find { it.name == parentProp.name } != null
                                         }?.dependsOn
                                         if(member != null) {
                                             if(this is IOrderedSteps) {
@@ -571,7 +633,7 @@ open class IBaseModel(
                             if(vd != null && parentProp != null) {
                                 Log.action("Dependency was found for parent: ${parentProp.name}") {
                                     val member = this.valueDependency.find { vd ->
-                                        vd.source.find { it.name == parentProp?.name } != null
+                                        vd.source.find { it.name == parentProp.name } != null
                                     }?.dependsOn
                                     if(member != null) {
                                         if(this is IOrderedSteps) {
@@ -599,11 +661,20 @@ open class IBaseModel(
         }
     }
 
-
+    fun fixValidationError(correctModel: IBaseModel) {
+        mappings.forEach { prop, sel ->
+            if(sel is IFormInput) {
+                if(sel.isValidationError()) {
+                    correctModel.fill(prop)
+                    //Log.info("$sel is invalid")
+                }
+            }
+        }
+    }
 
     inner class FieldsCls {
         fun input(mapping: BaseSelector? = null, default: String = "") =
-            Delegates.observable(default) { prop, old, new ->
+            Delegates.observable(default) { prop, _, new ->
                 addMapping(prop, mapping)
 
                 if(isReadyForUiInput()) {
@@ -614,6 +685,10 @@ open class IBaseModel(
 
                         val sel = mappings.filterKeys { it.name == prop.name }.values.first()
 
+                       /* if(sel.isHidden && new.isEmpty()) {
+                            return@action
+                        }
+*/
                         makeVisible(sel, prop)
 
                         if(sel is IFormInput) {
@@ -658,7 +733,7 @@ open class IBaseModel(
 
         fun nothing(mapping: BaseSelector? = null, default: String = "") =
             Delegates.observable(default) {
-                    prop, old, new ->
+                    prop, _, _ ->
                 addMapping(prop, mapping)
 
                 if(isReadyForUiInput()) {
@@ -669,6 +744,10 @@ open class IBaseModel(
             }
 
         private fun addMapping(prop: KProperty<*>, sel: BaseSelector?) {
+            isDelegatesUsed = true
+            if(sel == null) {
+                isNullSelector = true
+            }
             propTrig = true
             sel?.let {
                 if(mappingsInitialized) {
@@ -683,7 +762,7 @@ open class IBaseModel(
         }
 
         fun click(mapping: BaseSelector? = null, default: String = "") =
-            Delegates.observable(default) { prop, old, new ->
+            Delegates.observable(default) { prop, _, new ->
                 addMapping(prop, mapping)
                 if(isReadyForUiInput()) {
                     Log.action("Input value to the ${mapping?.name} throw click") {
@@ -705,7 +784,7 @@ open class IBaseModel(
             }
 
         fun switch(onTrue: BaseSelector? = null, onFalse: BaseSelector? = null, default: Boolean) =
-            Delegates.observable(default) { prop, old, new ->
+            Delegates.observable(default) { prop, _, new ->
                 addMapping(prop, onTrue)
                 addMapping(prop, onFalse)
 
@@ -729,17 +808,19 @@ open class IBaseModel(
                 }
             }
 
-        fun checkBox(cb: CheckBox, default: Boolean = true) =
+        fun checkBox(cb: CheckBox? = null, default: Boolean = true) =
             Delegates.observable(default) { prop, _, new ->
                 addMapping(prop, cb)
 
                 if(isReadyForUiInput()) {
-                    makeVisible(cb, prop)
+                    val sel = mappings.filterKeys { it.name == prop.name }.values.first()
+                    makeVisible(sel, prop)
                     if(ignoreInput.get().peek() !== prop) {
+                        sel as CheckBox
                         if (new) {
-                            cb.check()
+                            sel.check()
                         } else {
-                            cb.uncheck()
+                            sel.uncheck()
                         }
                         filledProps.add(prop)
                     }
@@ -764,7 +845,7 @@ open class IBaseModel(
     }
 
     fun readFromUI(): IBaseModel {
-        ignoreUpdateModel {
+        applyModel {
             mappings.forEach { prop, sel ->
                 if(sel.isVisible) {
                     if(prop is KMutableProperty<*>) {
@@ -865,20 +946,27 @@ val KProperty<*>.isPrimitive: Boolean
         return this.returnType.toString().endsWith("String") || ClassUtils.isPrimitiveOrWrapper(this.javaClass)
     }
 
+@SuppressWarnings
 fun <T : IBaseModel> T.clone() :T {
-    return this.ignoreUpdateModel {
+    return this.runInModel {
         clone(this) as T
     }
 }
 
 val <T : IBaseModel> T.modelFromUi :T
     get() {
-        return this.ignoreUpdateModel {
+        return runInModel {
             val model = if(this.view is IModelBlock<*>) (this.view as IModelBlock<*>).getFromUi() else this
             clone(model).readFromUI() as T
         }
     }
 
-
+private inline fun <reified T: Any?> safeTry(l: () -> T?): T? {
+    return try {
+        l()
+    } catch (e: Exception) {
+        null
+    }
+}
 
 

@@ -1,6 +1,7 @@
 Messages:
   Executor:
     beforeAction: "Ожидание %selector_name перед взаимодействием"
+    afterAction: "Блок после действия на элементом %selector_name"
 
   Cache:
     isPresent: "Проверка наличия в кэше"
