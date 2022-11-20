@@ -26,13 +26,26 @@ class ModelStateSelectorNavigation(
                 if (ann.modelState >= 0) {
                     elem.parents.filterIsInstance<IModelBlock<*>>().firstOrNull()?.let {
                         if(ann.modelState == IBaseModel.DEFAULT) {
-                            it().fill(true)
+                            if(ann.submitModel) {
+                                it().submit()
+                            } else {
+                                it().fill()
+                            }
                         } else {
                             val model = it()
+                            val waifForLoad = ann.modelState != IBaseModel.INCORRECT
                             if(model.view is IModelStates) {
-                                model.view.states[ann.modelState]?.fill(true)
+                                if(ann.submitModel) {
+                                    model.view.states[ann.modelState]?.submit(waifForLoad)
+                                } else {
+                                    model.view.states[ann.modelState]?.fill()
+                                }
                             } else {
-                                model.states[ann.modelState]?.fill(true)
+                                if(ann.submitModel) {
+                                    model.states[ann.modelState]?.submit(waifForLoad)
+                                } else {
+                                    model.states[ann.modelState]?.fill()
+                                }
                             }
                         }
 

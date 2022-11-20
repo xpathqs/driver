@@ -30,7 +30,7 @@ class CheckBoxLinkedNavigation(
             val linkedCheckbox = elem.customPropsMap[CHECKBOX_LINKED_KEY] ?:
                 elem.parents.firstOrNull {
                     it.customPropsMap.containsKey(CHECKBOX_LINKED_KEY)
-                }?.customPropsMap?.containsKey(CHECKBOX_LINKED_KEY)
+                }?.customPropsMap?.get(CHECKBOX_LINKED_KEY)
 
             (linkedCheckbox as? CheckBox)?.let {
                 it.check()

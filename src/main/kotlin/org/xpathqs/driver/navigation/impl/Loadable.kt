@@ -15,17 +15,20 @@ import java.time.Duration
 open class Loadable(private val block: Block) : ILoadable {
     private var isLoading = false
 
-    override val loading: Loading by lazy {
-        if(!isLoading) {
-            isLoading = true
-            (block as? ILoadable)?.loading
-        } else {
-            LoadingParser(block).parse()
-        } ?: LoadingParser(block).parse()
+    override val loading: Loading //by lazy {
+        get() {
+            return if (!isLoading) {
+                isLoading = true
+                (block as? ILoadable)?.loading
+            } else {
+                LoadingParser(block).parse()
+            } ?: LoadingParser(block).parse()
     }
+  //  }
 
     override fun waitForLoad(duration: Duration) {
         Log.action("Ожидаем Загрузки страницы") {
+            val loading = loading
             if(loading.loadSelector != null) {
                 loading.loadSelector!!.waitForVisible(duration)
                 if(loading.loadSelector!!.isHidden) {

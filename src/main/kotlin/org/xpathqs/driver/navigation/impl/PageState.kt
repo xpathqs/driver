@@ -66,17 +66,6 @@ class PageState(
         res
     }
 
-    private fun isStaticSelector(it: BaseSelector): Boolean {
-        return !it.hasAnnotation(UI.Visibility.Dynamic::class)
-                && !it.hasAnnotation(UI.Visibility.Backend::class)
-                && !it.hasAnyParentAnnotation(UI.Visibility.Backend::class)
-                && !it.hasAnyParentAnnotation(UI.Visibility.Dynamic::class)
-                && !it.hasAnyParentAnnotation(UI.Widgets.ValidationError::class)
-                && !it.hasAnnotation(UI.Widgets.ValidationError::class)
-                && !it.hasAnnotation(UI.Widgets.OptionItem::class)
-               // && it.field?.kotlinProperty?.visibility == KVisibility.PUBLIC
-    }
-
     override val pageState: Int
         get() {
             stateSelectorsMap.entries.forEach { (k, v) ->
@@ -87,4 +76,17 @@ class PageState(
             }
             return UNDEF_STATE
         }
+
+    companion object {
+        fun isStaticSelector(it: BaseSelector): Boolean {
+            return !it.hasAnnotation(UI.Visibility.Dynamic::class)
+                    && !it.hasAnnotation(UI.Visibility.Backend::class)
+                    && !it.hasAnyParentAnnotation(UI.Visibility.Backend::class)
+                    && !it.hasAnyParentAnnotation(UI.Visibility.Dynamic::class)
+                    && !it.hasAnyParentAnnotation(UI.Widgets.ValidationError::class)
+                    && !it.hasAnnotation(UI.Widgets.ValidationError::class)
+                    && !it.hasAnnotation(UI.Widgets.OptionItem::class)
+            // && it.field?.kotlinProperty?.visibility == KVisibility.PUBLIC
+        }
+    }
 }

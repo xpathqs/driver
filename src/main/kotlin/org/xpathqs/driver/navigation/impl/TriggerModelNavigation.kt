@@ -34,7 +34,9 @@ class TriggerModelNavigation(
 
                 var m = it()
                 var m2: IBaseModel? = m
+                var useSubmit = false
                 if(ann != null) {
+                    useSubmit = ann.submitModel
                     m2 = if(ann.modelDepends != UNDEF_STATE) {
                         if(m.view is IModelStates) {
                             (m.view as IModelStates).states[ann.modelDepends]
@@ -52,7 +54,11 @@ class TriggerModelNavigation(
 
                 if(prop != null) {
                     IBaseModel.ignoreInput.get().push(prop)
-                    model.fill(prop as KMutableProperty<*>)
+                    if(!useSubmit) {
+                        model.fill(prop as KMutableProperty<*>)
+                    } else {
+                        model.submit()
+                    }
                     IBaseModel.ignoreInput.get().pop()
 
                     if(sel.isVisible) {

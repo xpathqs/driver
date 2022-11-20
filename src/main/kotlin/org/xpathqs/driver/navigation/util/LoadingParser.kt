@@ -11,6 +11,7 @@ import org.xpathqs.driver.navigation.annotations.UI
 import org.xpathqs.driver.navigation.annotations.WaitForLoadEnum
 import org.xpathqs.driver.navigation.base.INavigableDetermination
 import org.xpathqs.driver.navigation.base.IPageState
+import org.xpathqs.driver.navigation.impl.PageState
 
 class LoadingParser(
     private val block: Block
@@ -45,7 +46,8 @@ class LoadingParser(
             Loading(loadAllSelectors = allColl)
         } else {
             Loading(
-                loadAllSelectors = (block as INavigableDetermination).determination.exist
+                loadAllSelectors = if(block is IPageState)
+                    selectors else (block as INavigableDetermination).determination.exist
             )
         }
     }

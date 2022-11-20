@@ -3,7 +3,7 @@ package org.xpathqs.driver.navigation
 import org.jgrapht.GraphPath
 import org.xpathqs.core.selector.base.BaseSelector
 import org.xpathqs.core.selector.base.findAnnotation
-import org.xpathqs.core.selector.base.findParentWithAnnotation
+import org.xpathqs.core.selector.base.findAnyParentAnnotation
 import org.xpathqs.core.selector.base.hasAnnotation
 import org.xpathqs.core.selector.block.Block
 import org.xpathqs.core.selector.block.findWithAnnotation
@@ -14,34 +14,41 @@ import org.xpathqs.driver.actions.IAction
 import org.xpathqs.driver.actions.MakeVisibleAction
 import org.xpathqs.driver.actions.SelectorInteractionAction
 import org.xpathqs.driver.constants.Messages
-import org.xpathqs.driver.exceptions.XPathQsException
 import org.xpathqs.driver.executor.ActionExecMap
 import org.xpathqs.driver.executor.CachedExecutor
 import org.xpathqs.driver.executor.Decorator
 import org.xpathqs.driver.executor.IExecutor
 import org.xpathqs.driver.extensions.click
 import org.xpathqs.driver.extensions.isHidden
-import org.xpathqs.driver.extensions.isVisible
 import org.xpathqs.driver.extensions.makeVisible
+import org.xpathqs.driver.extensions.waitForDisappear
 import org.xpathqs.driver.log.Log
-import org.xpathqs.driver.navigation.annotations.NavOrderType
 import org.xpathqs.driver.navigation.annotations.UI
 import org.xpathqs.driver.navigation.base.*
-import org.xpathqs.driver.navigation.impl.Navigable
 import org.xpathqs.driver.page.Page
 import java.time.Duration
 
 open class NavExecutor(
     origin: IExecutor,
-    val navigator: Navigator
+    val navigator: Navigator,
+    val globalState: IGlobalState = NoGlobalState
 ) : Decorator(origin) {
     init {
         navigator.init(this)
     }
 
     fun refreshCache() {
-        (origin as? CachedExecutor)?.refreshCache()
+        cachedExecutor.refreshCache()
     }
+
+    val cachedExecutor: CachedExecutor by lazy {
+        var e: IExecutor? = origin
+        while(e !is CachedExecutor && e != null) {
+            e = (e as? Decorator)?.origin
+        }
+        e as CachedExecutor
+    }
+
 
     override val actions: ActionExecMap = ActionExecMap().apply {
         set(MakeVisibleAction(Selector()).name) {
@@ -61,16 +68,38 @@ open class NavExecutor(
                     && (sourcePage as? INavigableDetermination)?.isVisible == true)
 
                 if(sourcePage != null && curPage != sourcePage && !blockIsVisible && sourcePage is Page) {
-                    Log.action("Необходима навигация") {
-                        if((curPage as? Block)?.hasAnnotation(UI.Nav.Autoclose::class) == true) {
-                            val closeBtn = (curPage as Block).findWithAnnotation(UI.Widgets.Back::class) ?:
-                                 (curPage as Block).findWithAnnotation(UI.Widgets.ClickToClose::class)
+                    Log.action("Navigation required") {
+                        Log.action("trying to autoclose current block") {
+                            if((curPage as? Block)?.hasAnnotation(UI.Nav.Autoclose::class) == true) {
+                                val closeBtn = (curPage as Block).findWithAnnotation(UI.Widgets.Back::class) ?:
+                                (curPage as Block).findWithAnnotation(UI.Widgets.ClickToClose::class)
 
-                            closeBtn?.click()
-
-                            curPage = navigator.currentPage
+                                closeBtn?.click()
+                                if(curPage is Page) {
+                                    (curPage as Page).waitForDisappear(Duration.ofSeconds(2))
+                                    repeat(10) {
+                                        val cp = try {
+                                            navigator.currentPage
+                                        } catch (e: Exception) {
+                                            null
+                                        }
+                                        if(cp != null && cp != curPage) {
+                                            return@repeat
+                                        }
+                                        Log.info("Waiting for 500ms for navigator to change the page")
+                                        Thread.sleep(500)
+                                        refreshCache()
+                                    }
+                                }
+                                curPage = navigator.currentPage
+                                (curPage as? ILoadable)?.waitForLoad(Duration.ofSeconds(10))
+                            }
                         }
-                        navigator.navigate(NavWrapper(curPage), NavWrapper.get(sourcePage))
+
+
+                        val ann = action.on.findAnnotation<UI.Visibility.State>() ?: action.on.findAnyParentAnnotation<UI.Visibility.State>()
+                        val state = ann?.value ?: UI.Visibility.UNDEF_STATE
+                        navigator.navigate(NavWrapper(curPage), NavWrapper.get(sourcePage, state))
                     }
 
                     val endPage = navigator.currentPage as Page
@@ -94,7 +123,7 @@ open class NavExecutor(
                             if(it.action != null) {
                                 it.action!!()
                                 Thread.sleep(500)
-                                (origin as? CachedExecutor)?.refreshCache()
+                                refreshCache()
                             }
                             (it.to.nav as? ILoadable)?.waitForLoad(Duration.ofSeconds(30))
                         }

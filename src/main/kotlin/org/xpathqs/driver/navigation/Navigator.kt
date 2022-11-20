@@ -2,29 +2,22 @@ package org.xpathqs.driver.navigation
 
 import org.jgrapht.GraphPath
 import org.jgrapht.alg.shortestpath.DijkstraShortestPath
-import org.jgrapht.graph.AbstractBaseGraph
 import org.jgrapht.graph.SimpleDirectedWeightedGraph
-import org.jgrapht.graph.specifics.Specifics
 import org.xpathqs.core.selector.base.ISelector
-import org.xpathqs.core.selector.base.hasAnnotation
 import org.xpathqs.core.selector.block.Block
 import org.xpathqs.core.selector.extensions.rootParent
 import org.xpathqs.driver.constants.Messages
 import org.xpathqs.driver.exceptions.XPathQsException
-import org.xpathqs.driver.executor.CachedExecutor
 import org.xpathqs.driver.executor.IExecutor
 import org.xpathqs.driver.log.Log
 import org.xpathqs.driver.navigation.annotations.UI
 import org.xpathqs.driver.navigation.annotations.UI.Visibility.Companion.UNDEF_STATE
 import org.xpathqs.driver.navigation.base.*
-import org.xpathqs.driver.page.*
 import org.xpathqs.driver.navigation.util.NavigationParser
-import org.xpathqs.log.style.StyleFactory.keyword
-import org.xpathqs.log.style.StyleFactory.selectorName
+import org.xpathqs.driver.page.*
 import java.time.Duration
+import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.findAnnotations
-import kotlin.reflect.full.memberProperties
-import kotlin.reflect.jvm.isAccessible
 
 open class Navigator : INavigator {
     private lateinit var executor: IExecutor
@@ -51,7 +44,7 @@ open class Navigator : INavigator {
                 }
                 if(ann.isNotEmpty()) {
                     ann.forEach {
-                        val state = it.pageState
+                        val state = page::class.findAnnotation<UI.Nav.Config>()?.defaultState ?: it.pageState
                         graph.addVertex(
                             NavWrapper.get(it.bySubmit.objectInstance as INavigableDetermination, state)
                         )
@@ -63,8 +56,9 @@ open class Navigator : INavigator {
                 }
             }
 
+            val state = page::class.findAnnotation<UI.Nav.Config>()?.defaultState ?: UNDEF_STATE
             graph.addVertex(
-                NavWrapper.get(page)
+                NavWrapper.get(page, state)
             )
         }
     }
@@ -172,7 +166,12 @@ open class Navigator : INavigator {
 
     fun findPath(from: NavWrapper?, to: NavWrapper?): GraphPath<NavWrapper, Edge>? {
         if(to == null) return null
-        return shortestPath.getPath(from, to)
+        return try {
+            shortestPath.getPath(from, to)
+        } catch (e : Exception) {
+            Log.error(e.message ?: "findPath error")
+            null
+        }
     }
 
     override fun navigate(from: NavWrapper, to: NavWrapper) {
@@ -190,9 +189,6 @@ open class Navigator : INavigator {
             (it.to.nav as? ILoadable)?.waitForLoad(Duration.ofSeconds(30))
             val cp = currentPage
             if((it.to.nav is INavigableDetermination && it.to.nav is Page) && it.to.nav != cp) {
-                if((cp as? Block)?.hasAnnotation(UI.Nav.Autoclose::class) == true) {
-                    //println("close page!")
-                }
                 throw Exception("Wrong page")
             }
         }

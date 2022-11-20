@@ -10,7 +10,7 @@ import org.xpathqs.driver.log.Log
 import java.time.Duration
 
 open class Decorator(
-    protected val origin: IExecutor
+    val origin: IExecutor
 ) : IExecutor {
 
     override fun execute(action: IAction) {
@@ -82,5 +82,11 @@ open class Decorator(
         }
     }
 
-
+    inline fun<reified T> findOriginInstance(): T? {
+        var check: Decorator? = origin as? Decorator
+        while (check !is T && check != null) {
+            check = (check as? Decorator)?.origin as? Decorator
+        }
+        return check as? T
+    }
 }

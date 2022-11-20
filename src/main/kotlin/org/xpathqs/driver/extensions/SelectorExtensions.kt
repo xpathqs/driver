@@ -45,6 +45,12 @@ fun <T : BaseSelector> Collection<T>.waitForFirstVisibleOf(duration: Duration = 
     )
 }
 
+fun <T : BaseSelector> Collection<T>.waitForAllVisible(duration: Duration = Global.WAIT_FOR_ELEMENT_TIMEOUT) {
+    Global.executor.execute(
+        WaitForAllSelectorAction(this, duration)
+    )
+}
+
 fun <T : BaseSelector> T.waitForElementsCount(
     count: Int = -1,
     moreThen: Int = -1,
@@ -194,13 +200,13 @@ fun <T : BaseSelector> T.afterAction(lambda: ()->Unit): T {
     this.customPropsMap[AFTER_ACTION_LAMBDA] = lambda
     return this
 }
-/*
 
 fun <T : BaseSelector> T.afterActionWait(sel: BaseSelector, duration: Duration = Duration.ofSeconds(10)): T {
     return afterActionWait(listOf(sel), duration)
 }
 
-fun <T : BaseSelector> T.afterActionWait(sel: List<BaseSelector>, duration: Duration = Duration.ofSeconds(10)): T {
-    this.customPropsMap[AFTER_ACTION_WAIT] = sel to duration
-    return this
-}*/
+fun <T : BaseSelector> T.afterActionWait(selectors: List<BaseSelector>, duration: Duration = Duration.ofSeconds(10)): T {
+    return afterAction {
+        selectors.waitForAllVisible(duration)
+    }
+}

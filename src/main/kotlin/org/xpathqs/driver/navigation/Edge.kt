@@ -1,14 +1,23 @@
 package org.xpathqs.driver.navigation
 
 import org.jgrapht.graph.DefaultWeightedEdge
+import org.xpathqs.core.selector.base.BaseSelector
+import org.xpathqs.core.selector.base.findAnnotation
+import org.xpathqs.core.selector.block.Block
 import org.xpathqs.driver.navigation.annotations.Model.Order.Companion.DEFAULT_ORDER
 import org.xpathqs.driver.navigation.annotations.UI
+import org.xpathqs.driver.navigation.annotations.UI.Visibility.Companion.UNDEF_STATE
 import org.xpathqs.driver.navigation.base.INavigable
 
 data class NavWrapper(
     val nav: INavigable,
-    val state: Int = UI.Visibility.UNDEF_STATE
+    val state: Int
 ) {
+    constructor(nav: INavigable) : this(
+        nav = nav,
+        state = (nav as? BaseSelector)?.findAnnotation<UI.Nav.Config>()?.defaultState ?: UNDEF_STATE
+    )
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is NavWrapper) return false
@@ -28,7 +37,10 @@ data class NavWrapper(
     companion object {
         private val values = ArrayList<NavWrapper>()
 
-        fun get(nav: INavigable, state: Int = UI.Visibility.UNDEF_STATE): NavWrapper {
+        fun get(nav: INavigable, state: Int = UNDEF_STATE): NavWrapper {
+            val state = if(state == UNDEF_STATE) {
+                (nav as? Block)?.findAnnotation<UI.Nav.Config>()?.defaultState ?: UNDEF_STATE
+            } else state
             val wrapper = NavWrapper(nav, state)
             values.find { it == wrapper }?.let {
                 return it

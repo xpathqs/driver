@@ -8,6 +8,7 @@ import org.xpathqs.core.selector.extensions.doesNotChildOf
 import org.xpathqs.driver.navigation.annotations.DeterminationType
 import org.xpathqs.driver.navigation.annotations.UI
 import org.xpathqs.driver.navigation.base.INavigableDetermination
+import org.xpathqs.driver.navigation.impl.PageState.Companion.isStaticSelector
 
 
 class DeterminationParser(
@@ -24,9 +25,9 @@ class DeterminationParser(
         selectorsWithBlocks.forEach {
             val selfAnn: UI.Nav.DeterminateBy? = it.findAnnotation()
             if(selfAnn != null) {
-                if(selfAnn.determination == DeterminationType.EXIST || selfAnn.determination == DeterminationType.EXIST_ALL) {
+                if(!selfAnn.stateDetermination && selfAnn.determination == DeterminationType.EXIST || selfAnn.determination == DeterminationType.EXIST_ALL) {
                     exist.add(it)
-                } else if(selfAnn.determination == DeterminationType.NOT_EXIST || selfAnn.determination == DeterminationType.NOT_EXIST_ALL){
+                } else if(!selfAnn.stateDetermination && selfAnn.determination == DeterminationType.NOT_EXIST || selfAnn.determination == DeterminationType.NOT_EXIST_ALL){
                     notExist.add(it)
                 }
             } else {
@@ -58,9 +59,7 @@ class DeterminationParser(
         }
 
         val e = exist.distinctBy { it.name }.filter {
-            (it doesNotChildOf hidden)
-                    && !it.hasAnnotation(UI.Visibility.Dynamic::class)
-                    && !it.hasAnyParentAnnotation(UI.Visibility.Dynamic::class)
+            (it doesNotChildOf hidden) && isStaticSelector(it)
         }
 
         val notBlanked = e.filter {

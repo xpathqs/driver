@@ -9,7 +9,7 @@ class UI {
     class Widgets {
         @Target(
             AnnotationTarget.CLASS,
-            AnnotationTarget.FIELD
+            AnnotationTarget.PROPERTY
         )
         @Retention(AnnotationRetention.RUNTIME)
         annotation class Form(
@@ -18,14 +18,14 @@ class UI {
 
         @Target(
             AnnotationTarget.CLASS,
-            AnnotationTarget.FIELD
+            AnnotationTarget.PROPERTY
         )
         @Retention(AnnotationRetention.RUNTIME)
         annotation class Submit
 
         @Target(
             AnnotationTarget.CLASS,
-            AnnotationTarget.FIELD
+            AnnotationTarget.PROPERTY
         )
         @Retention(AnnotationRetention.RUNTIME)
         annotation class Input(
@@ -35,56 +35,56 @@ class UI {
 
         @Target(
             AnnotationTarget.CLASS,
-            AnnotationTarget.FIELD
+            AnnotationTarget.PROPERTY
         )
         @Retention(AnnotationRetention.RUNTIME)
         annotation class Select
 
         @Target(
             AnnotationTarget.CLASS,
-            AnnotationTarget.FIELD
+            AnnotationTarget.PROPERTY
         )
         @Retention(AnnotationRetention.RUNTIME)
         annotation class OptionItem
 
         @Target(
             AnnotationTarget.CLASS,
-            AnnotationTarget.FIELD
+            AnnotationTarget.PROPERTY
         )
         @Retention(AnnotationRetention.RUNTIME)
         annotation class DropdownItem
 
         @Target(
             AnnotationTarget.CLASS,
-            AnnotationTarget.FIELD
+            AnnotationTarget.PROPERTY
         )
         @Retention(AnnotationRetention.RUNTIME)
         annotation class ValidationError
 
         @Target(
             AnnotationTarget.CLASS,
-            AnnotationTarget.FIELD
+            AnnotationTarget.PROPERTY
         )
         @Retention(AnnotationRetention.RUNTIME)
         annotation class ResetForm
 
         @Target(
             AnnotationTarget.CLASS,
-            AnnotationTarget.FIELD
+            AnnotationTarget.PROPERTY
         )
         @Retention(AnnotationRetention.RUNTIME)
         annotation class ClickToClose
 
         @Target(
             AnnotationTarget.CLASS,
-            AnnotationTarget.FIELD
+            AnnotationTarget.PROPERTY
         )
         @Retention(AnnotationRetention.RUNTIME)
         annotation class Back
 
         @Target(
             AnnotationTarget.CLASS,
-            AnnotationTarget.FIELD
+            AnnotationTarget.PROPERTY
         )
         @Retention(AnnotationRetention.RUNTIME)
         annotation class Checkbox(
@@ -96,7 +96,7 @@ class UI {
 
         @Target(
             AnnotationTarget.CLASS,
-            AnnotationTarget.FIELD
+            AnnotationTarget.PROPERTY
         )
         @Retention(AnnotationRetention.RUNTIME)
         annotation class Selectable(
@@ -106,34 +106,35 @@ class UI {
     class Visibility {
         @Target(
             AnnotationTarget.CLASS,
-            AnnotationTarget.FIELD
+            AnnotationTarget.PROPERTY
         )
         @Retention(AnnotationRetention.RUNTIME)
         annotation class Always
 
         @Target(
             AnnotationTarget.CLASS,
-            AnnotationTarget.FIELD
+            AnnotationTarget.PROPERTY
         )
         @Retention(AnnotationRetention.RUNTIME)
         annotation class Dynamic(
             val modelState: Int = UNDEF_STATE,
             val modelClass: KClass<*> = Any::class,
             val modelDepends: Int = UNDEF_STATE,
+            val submitModel: Boolean = false,
             val overlapped: Boolean = false,
             val internalState: Int = UNDEF_STATE,
         )
 
         @Target(
             AnnotationTarget.CLASS,
-            AnnotationTarget.FIELD
+            AnnotationTarget.PROPERTY
         )
         @Retention(AnnotationRetention.RUNTIME)
         annotation class Backend
 
         @Target(
             AnnotationTarget.CLASS,
-            AnnotationTarget.FIELD
+            AnnotationTarget.PROPERTY
         )
         @Retention(AnnotationRetention.RUNTIME)
         annotation class State(
@@ -148,7 +149,15 @@ class UI {
     class Nav {
         @Target(
             AnnotationTarget.CLASS,
-            AnnotationTarget.FIELD,
+        )
+        @Retention(AnnotationRetention.RUNTIME)
+        annotation class Config(
+            val defaultState: Int
+        )
+
+        @Target(
+            AnnotationTarget.CLASS,
+            AnnotationTarget.PROPERTY,
             AnnotationTarget.FUNCTION
         )
         @Retention(AnnotationRetention.RUNTIME)
@@ -159,11 +168,12 @@ class UI {
             val byInvoke: KClass<out Block> = Block::class,
             val bySubmit: KClass<out Block> = Block::class,
             val weight: Int = UNDEF,
-            vararg val contains: KClass<out Block> = [],
+            val contains: Array<KClass<out Block>> = [],
             val switchTab: Boolean = false,
             val pageState: Int = UNDEF,
             val selfPageState: Int = UNDEF,
-            val modelState: Int = UNDEF
+            val modelState: Int = UNDEF,
+            val globalState: Int = UNDEF
         ) {
             companion object {
                 const val UNDEF = -1
@@ -174,7 +184,7 @@ class UI {
 
         @Target(
             AnnotationTarget.CLASS,
-            AnnotationTarget.FIELD
+            AnnotationTarget.PROPERTY
         )
         @Retention(AnnotationRetention.RUNTIME)
         annotation class DeterminateBy(
@@ -197,7 +207,7 @@ class UI {
 
         @Target(
             AnnotationTarget.CLASS,
-            AnnotationTarget.FIELD
+            AnnotationTarget.PROPERTY
         )
         @Retention(AnnotationRetention.RUNTIME)
         annotation class WaitForLoad(
@@ -214,7 +224,7 @@ class UI {
 
     @Target(
         AnnotationTarget.CLASS,
-        AnnotationTarget.FIELD
+        AnnotationTarget.PROPERTY
     )
     @Retention(AnnotationRetention.RUNTIME)
     annotation class Animated(

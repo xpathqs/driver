@@ -36,13 +36,13 @@ import kotlin.reflect.jvm.jvmName
 
 open class IBaseModel(
     val view: Block? = null,
-    val comporator: IModelComporator = DefaultComparator()
+    private val comporator: IModelComporator = DefaultComparator()
 ) {
     private var mappingsInitialized = false
 
     val mappingsDelegate = resetableLazy {
         val res = LinkedHashMap<KProperty<*>, BaseSelector>()
-        if(useReflectionMappings) {
+        if(isNullSelector || !isDelegatesUsed) {
             res.putAll(reflectionMappings)
         }
         res.putAll(propArgsMappings)
@@ -53,9 +53,6 @@ open class IBaseModel(
 
     open val mappings: LinkedHashMap<KProperty<*>, BaseSelector>
         by mappingsDelegate
-
-    private val useReflectionMappings: Boolean
-        get() = !(isNullSelector && isDelegatesUsed)
 
     private var isNullSelector: Boolean = false
     private var isDelegatesUsed: Boolean = false
@@ -131,6 +128,8 @@ open class IBaseModel(
             ?: it.findParentWithAnnotation(ann)
         }.first()
 
+    open fun beforeFill() {}
+    open fun afterFill() {}
     open fun beforeSubmit() {}
     open fun afterSubmit() {}
 
@@ -161,7 +160,7 @@ open class IBaseModel(
 
     private var submitCalled = false
     @OptIn(ExperimentalStdlibApi::class)
-    open fun submit() {
+    open fun submit(waitForLoad: Boolean = true) {
         submitCalled = false
 
       //  if(!propTrig) {
@@ -172,11 +171,13 @@ open class IBaseModel(
             findWidget(UI.Widgets.Submit::class)?.click()
         }
         afterSubmit()
-        val p = findWidget(UI.Nav.PathTo::class)
-        if(p != null) {
-            val pathTo = p.findAnnotation<UI.Nav.PathTo>()?.bySubmit?.objectInstance
-            if(pathTo is ILoadable) {
-                pathTo.waitForLoad(Duration.ofSeconds(30))
+        if(waitForLoad) {
+            val p = findWidget(UI.Nav.PathTo::class)
+            if(p != null) {
+                val pathTo = p.findAnnotation<UI.Nav.PathTo>()?.bySubmit?.objectInstance
+                if(pathTo is ILoadable) {
+                    pathTo.waitForLoad(Duration.ofSeconds(30))
+                }
             }
         }
     }
@@ -311,6 +312,7 @@ open class IBaseModel(
     open fun fill(noSubmit: Boolean = false, other: IBaseModel? = null) {
         filledProps.clear()
         checkFilled = true
+        beforeFill()
         if(this is IOrderedSteps) {
             evalActions(steps, noSubmit, other)
         } else {
@@ -320,6 +322,8 @@ open class IBaseModel(
         }
         checkFilled = false
         this.propTrig = true
+
+        afterFill()
     }
 
     private fun evalActions(steps: Collection<InputAction>, noSubmit: Boolean = false, other: IBaseModel? = null) {
@@ -331,11 +335,19 @@ open class IBaseModel(
                 it
             }
 
-            action.props.forEach {
-                if(it.getter.parameters.isEmpty()) {
-                    val v = it.getter.call()
-                    (it as KMutableProperty<*>).setter.call(v)
+            action.props.forEach { prop ->
+                val it = if( prop.getter.parameters.isEmpty()) {
+                    this.mappings.keys.filter { it.fullName == prop.fullName }.firstOrNull()
                 } else {
+                    prop
+                } as? KMutableProperty<*>
+
+                if(it == null) {
+                    println("err")
+                }
+
+                it as KMutableProperty<*>
+                //} else {
                     val parent = findParent(this, it)
                     try {
                         val v = it.getter.call(parent)
@@ -353,7 +365,7 @@ open class IBaseModel(
                         val v = it.getter.call(parent)
                         (it as KMutableProperty<*>).setter.call(parent, v)
                     }
-                }
+                //}
             }
 
             Thread.sleep(500) //short delay after input action

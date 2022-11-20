@@ -2,6 +2,7 @@ package org.xpathqs.driver.navigation.impl
 
 import org.xpathqs.core.selector.base.BaseSelector
 import org.xpathqs.core.selector.base.ISelector
+import org.xpathqs.core.selector.base.findAnnotation
 import org.xpathqs.core.selector.base.hasAnnotation
 import org.xpathqs.core.selector.block.Block
 import org.xpathqs.core.selector.block.allInnerSelectors
@@ -114,7 +115,7 @@ open class Navigable(
                 val currentState = if(currentPage is IPageState) {
                     currentPage.pageState
                 } else {
-                    UNDEF_STATE
+                    (this.block.findAnnotation<UI.Nav.Config>())?.defaultState ?: UNDEF_STATE
                 }
                 val navState = if(currentPage === this.block && state == UNDEF_STATE) {
                     currentState
