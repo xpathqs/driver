@@ -9,9 +9,7 @@ import org.xpathqs.core.selector.block.allInnerSelectors
 import org.xpathqs.core.selector.block.findWithAnnotation
 import org.xpathqs.core.selector.extensions.parents
 import org.xpathqs.driver.exceptions.XPathQsException
-import org.xpathqs.driver.extensions.click
-import org.xpathqs.driver.extensions.isHidden
-import org.xpathqs.driver.extensions.makeVisible
+import org.xpathqs.driver.extensions.*
 import org.xpathqs.driver.navigation.Edge
 import org.xpathqs.driver.navigation.NavWrapper
 import org.xpathqs.driver.navigation.Navigator
@@ -52,11 +50,17 @@ open class Navigable(
             )
         )
 ) : INavigable, IBlockSelectorNavigation {
-    override fun addNavigation(to: INavigable, order: Int, selfState: Int, state: Int, action: (() -> Unit)?) {
-
+    override fun addNavigation(
+        to: INavigable,
+        order: Int,
+        selfState: Int,
+        state: Int,
+        globalState: Int,
+        action: (() -> Unit)?
+    ) {
         navigator.addEdge(
             Edge(
-                from = NavWrapper.get(block, selfState),
+                from = NavWrapper.get(block, selfState, globalState),
                 to = NavWrapper.get(to, state),
                 _weight = order.toDouble(),
                 action = action
@@ -121,10 +125,21 @@ open class Navigable(
                     currentState
                 } else state
 
-                navigator.navigate(
-                    NavWrapper.get(currentPage, currentState),
-                    NavWrapper.get(this.block, navState)
-                )
+                if((currentPage as Block).hasAnnotation(UI.Nav.Autoclose::class)) {
+                    currentPage.findWithAnnotation(UI.Widgets.ClickToClose::class)?.click()
+                    currentPage.waitForDisappear(
+                        Duration.ofSeconds(2)
+                    )
+                    if(currentPage.isVisible) {
+                        throw Exception("Unable to close Auto-Closable page $currentPage")
+                    }
+                    navigate(state)
+                } else {
+                    navigator.navigate(
+                        NavWrapper.get(currentPage, currentState),
+                        NavWrapper.get(this.block, navState)
+                    )
+                }
             } catch (e : XPathQsException.NoNavigation) {
                 this.block.findWithAnnotation(UI.Nav.DeterminateBy::class)?.makeVisible()
             }

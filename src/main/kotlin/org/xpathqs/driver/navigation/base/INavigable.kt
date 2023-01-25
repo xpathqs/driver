@@ -11,6 +11,7 @@ interface INavigable {
         weight: Int = DEFAULT,
         selfState: Int = UI.Visibility.UNDEF_STATE,
         state: Int = UI.Visibility.UNDEF_STATE,
+        globalState: Int = UI.Visibility.UNDEF_STATE,
         action: (()->Unit)? = null
     )
 

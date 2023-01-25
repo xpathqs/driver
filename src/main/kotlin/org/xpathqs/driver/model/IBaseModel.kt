@@ -30,6 +30,7 @@ import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.memberProperties
 import kotlin.reflect.jvm.isAccessible
+import kotlin.reflect.jvm.javaField
 import kotlin.reflect.jvm.javaType
 import kotlin.reflect.jvm.jvmName
 
@@ -159,7 +160,7 @@ open class IBaseModel(
     }
 
     private var submitCalled = false
-    @OptIn(ExperimentalStdlibApi::class)
+    
     open fun submit(waitForLoad: Boolean = true) {
         submitCalled = false
 
@@ -303,7 +304,15 @@ open class IBaseModel(
             } else {
                 prop as KMutableProperty
                 Log.action("Set $v to the ${parent?.toString()}") {
-                    prop.setter.call(parent, v)
+                    try {
+                        prop.setter.call(parent, v)
+                        val newV = safeTry { prop.getter.call(this) } ?: prop.getter.call(parent)
+                        if(v != newV) {
+                            Log.error("Value diff")
+                        }
+                    } catch (e: Exception) {
+                       throw e
+                    }
                 }
             }
         }
@@ -356,14 +365,17 @@ open class IBaseModel(
                             val parentOther = findParent(other, it)
                             val v2 = safeTry { it.getter.call(parentOther) }
                             if(!comporator.isEqual(it, v, v2)) {
-                                (it as KMutableProperty<*>).setter.call(parent, v)
+                                (it).setter.call(parent, v)
+                            } else {
+                                it.getter.call(parentOther)
+                                Log.info("Values are equals: $v2. Ignore input")
                             }
                         } else {
-                            (it as KMutableProperty<*>).setter.call(parent, v)
+                            (it).setter.call(parent, v)
                         }
                     } catch (e: Exception) {
                         val v = it.getter.call(parent)
-                        (it as KMutableProperty<*>).setter.call(parent, v)
+                        (it).setter.call(parent, v)
                     }
                 //}
             }
@@ -466,8 +478,13 @@ open class IBaseModel(
     fun findParent(source: Any, prop: KProperty<*>): Any? {
         return Log.action("Finding parent for ${prop.name}, source: $source") {
             try {
+                //previous - properties
                 properties(source).forEach {
+
                     if(it.fullName == prop.fullName || it === prop ) {
+                        Log.info("parent was found")
+                        return@action source
+                    } else if(prop.javaField.toString() == it.javaField.toString()) {
                         Log.info("parent was found")
                         return@action source
                     } else {
@@ -479,7 +496,6 @@ open class IBaseModel(
                                 return@action source
                             }
                         } catch (e: Exception) {
-
                         }
                     }
                     if(!it.isPrimitive) {
@@ -684,64 +700,93 @@ open class IBaseModel(
         }
     }
 
+    /*
+
+     */
+
+    enum class InputMethod {INPUT, CLICK, CHECKBOX, NOTHING}
+
     inner class FieldsCls {
-        fun input(mapping: BaseSelector? = null, default: String = "") =
+
+        fun compose(selectorsMap: Map<BaseSelector, InputMethod>, default: String = "") =
             Delegates.observable(default) { prop, _, new ->
-                addMapping(prop, mapping)
-
                 if(isReadyForUiInput()) {
-                    Log.action("Input value to the ${mapping?.name} throw input") {
-                        if(filledProps.contains(prop) && checkFilled) {
-                            return@action
-                        }
-
-                        val sel = mappings.filterKeys { it.name == prop.name }.values.first()
-
-                       /* if(sel.isHidden && new.isEmpty()) {
-                            return@action
-                        }
-*/
-                        makeVisible(sel, prop)
-
-                        if(sel is IFormInput) {
-                            val s = (sel as Block).findWithAnnotation(UI.Widgets.Input::class)
-                            if(s != null) {
-                                try {
-                                    val disabled = s.getAllAttrs().find {
-                                        it.first.equals("disabled", true)
-                                    } != null
-                                    makeVisible(sel, prop, disabled)
-                                } catch (e: Exception) {
-                                }
-                            }
-                        }
-
-                        if(ignoreInput.get().peek() !== prop) {
-                            Log.action("Selector ${sel.name} was found, calling input") {
-                                if(sel.isHidden) {
-                                    sel.waitForVisible(Duration.ofSeconds(1))
-                                    if(sel.isHidden) {
-                                        throw Exception("Selector can't be hidden")
-                                    }
-                                }
-
-                                if(sel is IFormSelect && new.isEmpty()) {
-                                    sel.selectAny()
-                                } else if (sel is IFormInput) {
-                                    if(new.isEmpty()) {
-                                        sel.clear()
-                                    } else {
-                                        sel.input(new)
-                                    }
-                                } else {
-                                    sel.input(new)
-                                }
-                                filledProps.add(prop)
-                            }
+                    selectorsMap.entries.find {
+                        it.key.isVisible
+                    }?.let {
+                        addMapping(prop, it.key)
+                        when(it.value) {
+                            InputMethod.INPUT -> inputImpl(it.key, prop, new)
+                            InputMethod.CLICK -> clickImpl(it.key, prop, new)
+                            InputMethod.CHECKBOX -> checkBoxImpl(it.key as CheckBox, prop, default.toBoolean())
+                            InputMethod.NOTHING -> {}
                         }
                     }
                 }
             }
+
+        fun input(mapping: BaseSelector? = null, default: String? = null) =
+            Delegates.observable(default) { prop, _, new ->
+                inputImpl(mapping, prop, new)
+            }
+
+        internal fun inputImpl(mapping: BaseSelector? = null, prop: KProperty<*>, new: String?) {
+            addMapping(prop, mapping)
+
+            if(isReadyForUiInput() && new != null) {
+
+                Log.action("Input value to the ${mapping?.name} throw input") {
+                    if(filledProps.contains(prop) && checkFilled) {
+                        return@action
+                    }
+
+                    val sel = mappings.filterKeys { it.name == prop.name }.values.first()
+
+                    /* if(sel.isHidden && new.isEmpty()) {
+                         return@action
+                     }
+*/
+                    makeVisible(sel, prop)
+
+                    if(sel is IFormInput) {
+                        val s = (sel as Block).findWithAnnotation(UI.Widgets.Input::class)
+                        if(s != null) {
+                            try {
+                                val disabled = s.getAllAttrs().find {
+                                    it.first.equals("disabled", true)
+                                } != null
+                                makeVisible(sel, prop, disabled)
+                            } catch (e: Exception) {
+                            }
+                        }
+                    }
+
+                    if(ignoreInput.get().peek() !== prop) {
+                        Log.action("Selector ${sel.name} was found, calling input") {
+                            if(sel.isHidden) {
+                                sel.waitForVisible(Duration.ofSeconds(1))
+                                if(sel.isHidden) {
+                                    throw Exception("Selector can't be hidden")
+                                }
+                            }
+
+                            if(sel is IFormSelect && new.isEmpty()) {
+                                sel.selectAny()
+                            } else if (sel is IFormInput) {
+                                if(new.isEmpty()) {
+                                    sel.clear()
+                                } else {
+                                    sel.input(new)
+                                }
+                            } else {
+                                sel.input(new)
+                            }
+                            filledProps.add(prop)
+                        }
+                    }
+                }
+            }
+        }
 
         fun nothing(mapping: BaseSelector? = null, default: String = "") =
             Delegates.observable(default) {
@@ -749,8 +794,9 @@ open class IBaseModel(
                 addMapping(prop, mapping)
 
                 if(isReadyForUiInput()) {
-                    val sel = mappings.filterKeys { it.name == prop.name }.values.first()
-                    makeVisible(sel, prop)
+                   // val sel = mappings.filterKeys { it.name == prop.name }.values.first()
+                    //TODO why it should be visible?
+                    //makeVisible(sel, prop)
                     filledProps.add(prop)
                 }
             }
@@ -773,27 +819,32 @@ open class IBaseModel(
             }
         }
 
-        fun click(mapping: BaseSelector? = null, default: String = "") =
+        fun click(mapping: BaseSelector? = null, default: String? = null) =
             Delegates.observable(default) { prop, _, new ->
-                addMapping(prop, mapping)
-                if(isReadyForUiInput()) {
-                    Log.action("Input value to the ${mapping?.name} throw click") {
-                        val sel = mappings.filterKeys { it.name == prop.name }.values.first()
+                clickImpl(mapping, prop, new)
+            }
 
-                        makeVisible(sel, prop)
-                        if(ignoreInput.get().peek() !== prop) {
-                            if(sel is IFormSelect && new.isEmpty()) {
-                                sel.selectAny()
-                            } else if (sel is IFormInput) {
-                                sel.input(new)
-                            } else {
-                                sel.text(new).click()
-                            }
-                            filledProps.add(prop)
+        internal fun clickImpl(mapping: BaseSelector? = null, prop: KProperty<*>, new: String?) {
+            addMapping(prop, mapping)
+
+            if(isReadyForUiInput() && new != null) {
+                Log.action("Input value to the ${mapping?.name} throw click") {
+                    val sel = mappings.filterKeys { it.name == prop.name }.values.first()
+
+                    makeVisible(sel, prop)
+                    if(ignoreInput.get().peek() !== prop) {
+                        if(sel is IFormSelect && new.isEmpty()) {
+                            sel.selectAny()
+                        } else if (sel is IFormInput) {
+                            sel.input(new)
+                        } else {
+                            sel.text(new).click()
                         }
+                        filledProps.add(prop)
                     }
                 }
             }
+        }
 
         fun switch(onTrue: BaseSelector? = null, onFalse: BaseSelector? = null, default: Boolean) =
             Delegates.observable(default) { prop, _, new ->
@@ -822,24 +873,29 @@ open class IBaseModel(
 
         fun checkBox(cb: CheckBox? = null, default: Boolean = true) =
             Delegates.observable(default) { prop, _, new ->
-                addMapping(prop, cb)
-
-                if(isReadyForUiInput()) {
-                    val sel = mappings.filterKeys { it.name == prop.name }.values.first()
-                    makeVisible(sel, prop)
-                    if(ignoreInput.get().peek() !== prop) {
-                        sel as CheckBox
-                        if (new) {
-                            sel.check()
-                        } else {
-                            sel.uncheck()
-                        }
-                        filledProps.add(prop)
-                    }
-                }
+                checkBoxImpl(cb, prop, new)
             }
 
+        internal fun checkBoxImpl(cb: CheckBox? = null, prop: KProperty<*>, new: Boolean) {
+            addMapping(prop, cb)
+
+            if(isReadyForUiInput()) {
+                val sel = mappings.filterKeys { it.name == prop.name }.values.first()
+                makeVisible(sel, prop)
+                if(ignoreInput.get().peek() !== prop) {
+                    sel as CheckBox
+                    if (new) {
+                        sel.check()
+                    } else {
+                        sel.uncheck()
+                    }
+                    filledProps.add(prop)
+                }
+            }
+        }
     } val Fields = FieldsCls()
+
+
 
     fun getValueByProp(prop: KProperty<*>): String {
         val parent = findParent(this@IBaseModel, prop)
@@ -862,6 +918,9 @@ open class IBaseModel(
                 if(sel.isVisible) {
                     if(prop is KMutableProperty<*>) {
                         val thiz = findParent(this@IBaseModel, prop)
+                        if(thiz == null) {
+                            findParent(this@IBaseModel, prop)
+                        }
                         if(sel is IFormRead) {
                             if(sel.isReady()) {
                                 when(prop.returnType.javaType.typeName.substringAfterLast(".").lowercase()) {
@@ -955,7 +1014,9 @@ data class ModelProperty(
 
 val KProperty<*>.isPrimitive: Boolean
     get() {
-        return this.returnType.toString().endsWith("String") || ClassUtils.isPrimitiveOrWrapper(this.javaClass)
+        return this.returnType.toString().endsWith("String")
+                || this.returnType.toString().endsWith("String?")
+                || ClassUtils.isPrimitiveOrWrapper(this.javaClass)
     }
 
 @SuppressWarnings

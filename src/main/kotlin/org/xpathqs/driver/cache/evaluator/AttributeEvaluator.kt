@@ -12,9 +12,11 @@ class AttributeEvaluator(
     fun getAttributes(xpath: String): Collection<Pair<String, String>> {
         val res = ArrayList<Pair<String, String>>()
         val node = eval.evalNode(xpath)
-        for (i in 0 until node.attributes.length) {
-            val item = node.attributes.item(i)
-            res.add(item.nodeName to item.nodeValue)
+        if(node != null) {
+            for (i in 0 until node.attributes.length) {
+                val item = node.attributes.item(i)
+                res.add(item.nodeName to item.nodeValue)
+            }
         }
         return res
     }
@@ -29,13 +31,17 @@ class AttributeEvaluator(
         return res
     }
 
-    private fun getAttributeFromNode(node: Node, name: String): String {
-        if (name == Global.TEXT_ARG) {
-            return node.textContent
-        }
+    private fun getAttributeFromNode(node: Node?, name: String): String {
+        if(node != null) {
+            if (name == Global.TEXT_ARG) {
+                return node.textContent
+            }
 
-        return node.attributes
-            .getNamedItem(fixParamName(name)).textContent
+            return node.attributes
+                .getNamedItem(fixParamName(name)).textContent
+        } else {
+            return ""
+        }
     }
 
     private fun fixParamName(name: String) =

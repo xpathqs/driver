@@ -10,6 +10,9 @@ import org.xpathqs.driver.log.Log
 import org.xpathqs.driver.navigation.base.ILoadable
 import org.xpathqs.driver.navigation.util.Loading
 import org.xpathqs.driver.navigation.util.LoadingParser
+import org.xpathqs.driver.navigation.util.getOneOfSelectors
+import org.xpathqs.driver.navigation.util.getRootWithOnOfSelectors
+import org.xpathqs.driver.page.Page
 import java.time.Duration
 
 open class Loadable(private val block: Block) : ILoadable {
@@ -27,8 +30,13 @@ open class Loadable(private val block: Block) : ILoadable {
   //  }
 
     override fun waitForLoad(duration: Duration) {
-        Log.action("Ожидаем Загрузки страницы") {
-            val loading = loading
+        val text = if(block is Page) "страницы" else "блока"
+        Log.action("Ожидаем Загрузки $text: ${block.name}") {
+            val oneOf = block.getRootWithOnOfSelectors()
+            val loading = if(oneOf != null) {
+                Loadable(oneOf).loading
+            } else loading
+
             if(loading.loadSelector != null) {
                 loading.loadSelector!!.waitForVisible(duration)
                 if(loading.loadSelector!!.isHidden) {

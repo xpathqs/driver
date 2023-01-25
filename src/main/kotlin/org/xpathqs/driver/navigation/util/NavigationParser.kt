@@ -27,7 +27,7 @@ import kotlin.reflect.jvm.kotlinProperty
 class NavigationParser(
     private val page: INavigable
 ) {
-    @OptIn(ExperimentalStdlibApi::class)
+    
     fun parse() {
         page as Block
 
@@ -40,6 +40,7 @@ class NavigationParser(
                         to = ann.byInvoke.objectInstance!! as INavigable,
                         state = ann.pageState,
                         selfState = ann.selfPageState,
+                        globalState = ann.globalState
                     ) {
                         m.call(page)
                     }
@@ -53,7 +54,7 @@ class NavigationParser(
             it.hasAnnotation(UI.Nav.PathTo::class)
         }
         selectors.forEach {
-            it.field?.kotlinProperty?.findAnnotations<UI.Nav.PathTo>()?.forEach { ann ->
+            it.property?.findAnnotations<UI.Nav.PathTo>()?.forEach { ann ->
            // it.annotations.forEach { ann ->
                // if(ann is UI.Nav.PathTo) {
                     if (ann.byClick != Block::class) {
@@ -64,6 +65,7 @@ class NavigationParser(
                             weight = weight,
                             state = ann.pageState,
                             selfState = ann.selfPageState,
+                            globalState = ann.globalState
                         ) {
                             if (ann.globalState != UNDEF_STATE) {
                                 ((Global.executor as Decorator).origin as NavExecutor).globalState.globalState = ann.globalState
@@ -85,12 +87,21 @@ class NavigationParser(
             //Add navigation for the "Contains" blocks, which are already present on the page
             //Executor should do nothing, this edge is for JGraph only
             try {
-                it.contains.forEach { cls ->
+               // it.contains.forEach { cls ->
+                if(it.contain != Block::class) {
+                    val cls = it.contain
                     val obj = cls.objectInstance!! as INavigable
                     val weight = if(it.weight != UI.Nav.PathTo.UNDEF) it.weight else UI.Nav.PathTo.ALREADY_PRESENT_WEIGHT
                     //val state = (page.findAnnotation<UI.Nav.Config>())?.defaultState ?: UNDEF_STATE
 
-                    page.addNavigation(obj, weight = weight, state = it.pageState, selfState = it.pageState)
+                    page.addNavigation(
+                        obj,
+                        weight = weight,
+                        state = it.pageState,
+                        selfState = it.pageState,
+                        globalState = it.globalState
+                    )
+
                 }
             } catch(e: Error) {}
 
@@ -102,7 +113,8 @@ class NavigationParser(
                     to = obj,
                     weight = weight,
                     selfState = it.selfPageState,
-                    state = it.pageState
+                    state = it.pageState,
+                    globalState = it.globalState
                 ) {
                     val model =
                         if(it.pageState != UI.Nav.PathTo.UNDEF) {

@@ -3,6 +3,7 @@ package org.xpathqs.driver.navigation.base
 import kotlin.reflect.KClass
 import kotlin.reflect.KMutableProperty
 import kotlin.reflect.KProperty
+import kotlin.reflect.KProperty1
 import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.full.memberProperties
 
@@ -18,17 +19,17 @@ open class InputAction(
 
     companion object {
         fun submit(obj: Any?) = if(obj == null) submit() else submit(obj!!::class)
-        fun submit(cls: KClass<*>) = submit(*cls.memberProperties.filterIsInstance<KMutableProperty<*>>().toTypedArray())
+        fun submit(cls: KClass<*>) = submit(*(sortMembers(cls).toTypedArray()))
         fun submit(vararg props: KProperty<*>)
                 = InputAction(InputType.SUBMIT, listOf(*props))
 
         fun input(obj: Any?) = input(if(obj == null) null else obj::class)
-        fun input(cls: KClass<*>?) = input(*cls?.memberProperties?.filterIsInstance<KMutableProperty<*>>()?.toTypedArray() ?: emptyArray())
+        fun input(cls: KClass<*>?) = input(*(sortMembers(cls).toTypedArray()))
         fun input(vararg props: KProperty<*>)
                 = InputAction(InputType.INPUT, listOf(*props))
 
         fun click(obj: Any?) = click(if(obj == null) null else obj::class)
-        fun click(cls: KClass<*>?) = click(*cls?.memberProperties?.filterIsInstance<KMutableProperty<*>>()?.toTypedArray() ?: emptyArray())
+        fun click(cls: KClass<*>?) = click(*(sortMembers(cls).toTypedArray()))
         fun click(vararg props: KProperty<*>)
                 = InputAction(InputType.CLICK, listOf(*props))
 
@@ -42,6 +43,13 @@ open class InputAction(
                 obj.valueDependency
             }
         }*/
+
+        fun sortMembers(cls: KClass<*>?): List<KMutableProperty<*>> {
+            if(cls == null) return emptyList()
+            val fields = cls.java.declaredFields
+            val orderById = fields.withIndex().associate { it.value.name.substringBefore("$") to it.index }
+            return cls.memberProperties.sortedBy { orderById[it.name] }.filterIsInstance<KMutableProperty<*>>()
+        }
     }
 
 }

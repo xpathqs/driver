@@ -137,6 +137,13 @@ class UI {
             AnnotationTarget.PROPERTY
         )
         @Retention(AnnotationRetention.RUNTIME)
+        annotation class OneOf
+
+        @Target(
+            AnnotationTarget.CLASS,
+            AnnotationTarget.PROPERTY
+        )
+        @Retention(AnnotationRetention.RUNTIME)
         annotation class State(
             val value: Int
         )
@@ -162,18 +169,18 @@ class UI {
         )
         @Retention(AnnotationRetention.RUNTIME)
         @Repeatable
-        @ExperimentalStdlibApi
         annotation class PathTo(
             val byClick:  KClass<out Block> = Block::class,
             val byInvoke: KClass<out Block> = Block::class,
             val bySubmit: KClass<out Block> = Block::class,
             val weight: Int = UNDEF,
-            val contains: Array<KClass<out Block>> = [],
+        //    val contains: Array<KClass<out Block>> = [],
+            val contain: KClass<out Block> = Block::class,
             val switchTab: Boolean = false,
             val pageState: Int = UNDEF,
             val selfPageState: Int = UNDEF,
             val modelState: Int = UNDEF,
-            val globalState: Int = UNDEF
+            val globalState: Int = UNDEF,
         ) {
             companion object {
                 const val UNDEF = -1

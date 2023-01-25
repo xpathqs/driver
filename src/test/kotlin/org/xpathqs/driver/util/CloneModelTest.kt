@@ -91,7 +91,7 @@ class CloneModelTest {
             DefaultModels.defaultPageModel
         }.WHEN {
             Page1()
-        }.ASSERT {
+        }.THEN {
             assertThat(actual)
                 .isNotSameAs(given)
 
@@ -112,7 +112,7 @@ class CloneModelTest {
             DefaultModels.defaultInnerPageModel
         }.WHEN {
             InnerPage1()
-        }.ASSERT {
+        }.THEN {
             assertThat(actual)
                 .isNotSameAs(given)
 
@@ -140,7 +140,7 @@ class CloneModelTest {
             DefaultModels.defaultInheritancePageModel
         }.WHEN {
             InheritancePage()
-        }.ASSERT {
+        }.THEN {
             val actualObj = actual.in1 as InheritancePage.PageModel.Child
             val givenObj = given.in1 as InheritancePage.PageModel.Child
 

@@ -11,7 +11,8 @@ import org.xpathqs.driver.navigation.base.INavigable
 
 data class NavWrapper(
     val nav: INavigable,
-    val state: Int
+    val state: Int,
+    val globalState: Int = UNDEF_STATE
 ) {
     constructor(nav: INavigable) : this(
         nav = nav,
@@ -23,25 +24,28 @@ data class NavWrapper(
         if (other !is NavWrapper) return false
 
         if (nav !== other.nav) return false
-        if (state != other.state) return false
+        if (state != other.state && state != UNDEF_STATE) return false
+        if (globalState != other.globalState) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        var result = nav.hashCode()
-        result = 31 * result + state
+        var result = 31 * nav.hashCode() + globalState
+        if(state != UNDEF_STATE) {
+            result += state * 10
+        }
         return result
     }
 
     companion object {
         private val values = ArrayList<NavWrapper>()
 
-        fun get(nav: INavigable, state: Int = UNDEF_STATE): NavWrapper {
+        fun get(nav: INavigable, state: Int = UNDEF_STATE, globalState: Int = UNDEF_STATE): NavWrapper {
             val state = if(state == UNDEF_STATE) {
                 (nav as? Block)?.findAnnotation<UI.Nav.Config>()?.defaultState ?: UNDEF_STATE
             } else state
-            val wrapper = NavWrapper(nav, state)
+            val wrapper = NavWrapper(nav, state, globalState)
             values.find { it == wrapper }?.let {
                 return it
             }
@@ -78,7 +82,7 @@ open class Edge(
     }
 
     private class MockNavigable : INavigable {
-        override fun addNavigation(to: INavigable, weight: Int, state: Int, selfState: Int, action: (() -> Unit)?) {
+        override fun addNavigation(to: INavigable, weight: Int, state: Int, selfState: Int, globalState: Int, action: (() -> Unit)?) {
         }
     }
 }

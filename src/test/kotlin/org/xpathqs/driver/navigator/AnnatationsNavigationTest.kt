@@ -8,19 +8,19 @@ import org.xpathqs.driver.navigation.annotations.UI
 import org.xpathqs.driver.page.NavDetermination
 import org.xpathqs.gwt.WHEN
 
-@OptIn(ExperimentalStdlibApi::class)
+
 object AnnDetermination1: NavDetermination(navigator = navigator) {
     @UI.Nav.PathTo(byClick = AnnDetermination2::class)
     val button = tagSelector("div")
 }
 
-@OptIn(ExperimentalStdlibApi::class)
+
 object AnnDetermination2: NavDetermination(navigator = navigator) {
     @UI.Nav.PathTo(byClick = AnnDetermination3::class)
     val button = tagSelector("div")
 }
 
-@OptIn(ExperimentalStdlibApi::class)
+
 object AnnDetermination3: NavDetermination(navigator = navigator) {
     @UI.Nav.PathTo(byClick = AnnDetermination1::class)
     @UI.Nav.DeterminateBy()

@@ -12,8 +12,8 @@ import org.xpathqs.gwt.WHEN
 
 class LoginModel() : IBaseModel() {
 
-    var password: String by Fields.input()
-    var userName: String by Fields.input()
+  //  var password: String by Fields.input()
+  //  var userName: String by Fields.input()
 
    /* override val mappings: LinkedHashMap<KProperty<*>, BaseSelector>
         get() =

@@ -5,35 +5,30 @@ class Model {
 
     class DataTypes {
         @Target(
-            AnnotationTarget.FIELD,
             AnnotationTarget.PROPERTY,
         )
         @Retention(AnnotationRetention.RUNTIME)
         annotation class Date
 
         @Target(
-            AnnotationTarget.FIELD,
             AnnotationTarget.PROPERTY,
         )
         @Retention(AnnotationRetention.RUNTIME)
         annotation class Number
 
         @Target(
-            AnnotationTarget.FIELD,
             AnnotationTarget.PROPERTY,
         )
         @Retention(AnnotationRetention.RUNTIME)
         annotation class Currency
 
         @Target(
-            AnnotationTarget.FIELD,
             AnnotationTarget.PROPERTY,
         )
         @Retention(AnnotationRetention.RUNTIME)
         annotation class Ignore
 
         @Target(
-            AnnotationTarget.FIELD,
             AnnotationTarget.PROPERTY,
         )
         @Retention(AnnotationRetention.RUNTIME)
@@ -42,9 +37,23 @@ class Model {
         )
     }
 
+    class ComparatorConfig {
+        @Target(
+            AnnotationTarget.PROPERTY,
+        )
+        @Retention(AnnotationRetention.RUNTIME)
+        annotation class IgnoreDots
+
+        @Target(
+            AnnotationTarget.PROPERTY,
+        )
+        @Retention(AnnotationRetention.RUNTIME)
+        annotation class StartsWith
+    }
+
     @Target(
         AnnotationTarget.CLASS,
-        AnnotationTarget.FIELD
+        AnnotationTarget.PROPERTY
     )
     @Retention(AnnotationRetention.RUNTIME)
     annotation class Order(

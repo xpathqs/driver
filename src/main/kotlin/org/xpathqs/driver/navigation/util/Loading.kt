@@ -7,7 +7,8 @@ import org.xpathqs.driver.extensions.isVisible
 class Loading(
     var loadSelector: BaseSelector? = null,
     var loadAllSelectors: Collection<BaseSelector> = emptyList(),
-    var loadAnySelectors: Collection<BaseSelector> = emptyList()
+    var loadAnySelectors: Collection<BaseSelector> = emptyList(),
+  //  var loadOneOfSelectors: Collection<BaseSelector> = emptyList()
 ) {
     val isLoaded: Boolean
         get() {

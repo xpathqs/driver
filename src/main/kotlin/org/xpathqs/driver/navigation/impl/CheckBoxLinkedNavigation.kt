@@ -18,6 +18,10 @@ import org.xpathqs.driver.widgets.CheckBox
 import java.time.Duration
 
 private const val CHECKBOX_LINKED_KEY = "CHECKBOX_LINKED_KEY"
+private class LinkWithCheckbox(
+    val checkbox: CheckBox,
+    val reverted: Boolean
+)
 
 class CheckBoxLinkedNavigation(
     private val base: IBlockSelectorNavigation
@@ -32,8 +36,10 @@ class CheckBoxLinkedNavigation(
                     it.customPropsMap.containsKey(CHECKBOX_LINKED_KEY)
                 }?.customPropsMap?.get(CHECKBOX_LINKED_KEY)
 
-            (linkedCheckbox as? CheckBox)?.let {
-                it.check()
+            (linkedCheckbox as? LinkWithCheckbox)?.let {
+                if(it.reverted) it.checkbox.uncheck() else it.checkbox.check()
+                elem.waitForVisible(Duration.ofSeconds(2))
+
                 if(elem.isVisible) {
                     return
                 }
@@ -44,7 +50,7 @@ class CheckBoxLinkedNavigation(
     }
 }
 
-fun <T: BaseSelector> T.linkWithCheckbox(checkbox: CheckBox) : T {
-    customPropsMap[CHECKBOX_LINKED_KEY] = checkbox
+fun <T: BaseSelector> T.linkWithCheckbox(checkbox: CheckBox, reverted: Boolean = false) : T {
+    customPropsMap[CHECKBOX_LINKED_KEY] = LinkWithCheckbox(checkbox, reverted)
     return this
 }

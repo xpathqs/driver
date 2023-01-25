@@ -29,7 +29,7 @@ class ModelStateSelectorNavigation(
                             if(ann.submitModel) {
                                 it().submit()
                             } else {
-                                it().fill()
+                                it().fill(noSubmit = true)
                             }
                         } else {
                             val model = it()
@@ -38,13 +38,13 @@ class ModelStateSelectorNavigation(
                                 if(ann.submitModel) {
                                     model.view.states[ann.modelState]?.submit(waifForLoad)
                                 } else {
-                                    model.view.states[ann.modelState]?.fill()
+                                    model.view.states[ann.modelState]?.fill(noSubmit = true)
                                 }
                             } else {
                                 if(ann.submitModel) {
                                     model.states[ann.modelState]?.submit(waifForLoad)
                                 } else {
-                                    model.states[ann.modelState]?.fill()
+                                    model.states[ann.modelState]?.fill(noSubmit = true)
                                 }
                             }
                         }

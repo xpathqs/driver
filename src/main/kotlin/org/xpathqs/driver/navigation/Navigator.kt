@@ -31,7 +31,7 @@ open class Navigator : INavigator {
 
     private val firstTimeDetection = HashSet<String>()
 
-    @OptIn(ExperimentalStdlibApi::class)
+    
     fun register(page: INavigable) {
         page as ISelector
         if(!pages.contains(page)) {
@@ -46,7 +46,7 @@ open class Navigator : INavigator {
                     ann.forEach {
                         val state = page::class.findAnnotation<UI.Nav.Config>()?.defaultState ?: it.pageState
                         graph.addVertex(
-                            NavWrapper.get(it.bySubmit.objectInstance as INavigableDetermination, state)
+                            NavWrapper.get(it.bySubmit.objectInstance as INavigableDetermination, state, it.globalState)
                         )
                     }
                 }
@@ -57,8 +57,9 @@ open class Navigator : INavigator {
             }
 
             val state = page::class.findAnnotation<UI.Nav.Config>()?.defaultState ?: UNDEF_STATE
+            val globalState = page::class.findAnnotation<UI.Nav.Config>() ?: UNDEF_STATE
             graph.addVertex(
-                NavWrapper.get(page, state)
+                NavWrapper.get(nav = page, state = state, globalState = UNDEF_STATE)
             )
         }
     }

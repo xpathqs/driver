@@ -62,7 +62,7 @@ class CloneTest {
             SimpleCls("10", 10)
         }.WHEN {
             clone(given)
-        }.ASSERT {
+        }.THEN {
             assertThat(given)
                 .isNotSameAs(actual)
 
@@ -84,7 +84,7 @@ class CloneTest {
             given
         }.WHEN {
             clone(given)
-        }.ASSERT {
+        }.THEN {
             assertThat(given)
                 .isNotSameAs(actual)
 
@@ -105,7 +105,7 @@ class CloneTest {
             given
         }.WHEN {
             clone(given)
-        }.ASSERT {
+        }.THEN {
             assertThat(given)
                 .isNotSameAs(actual)
 
@@ -136,7 +136,7 @@ class CloneTest {
             given
         }.WHEN {
             clone(given)
-        }.ASSERT {
+        }.THEN {
             assertThat(given)
                 .isNotSameAs(actual)
 
@@ -170,7 +170,7 @@ class CloneTest {
             given
         }.WHEN {
             clone(given)
-        }.ASSERT {
+        }.THEN {
             assertThat(given)
                 .isNotSameAs(actual)
 
