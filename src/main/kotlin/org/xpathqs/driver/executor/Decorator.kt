@@ -6,8 +6,9 @@ import org.xpathqs.driver.core.IDriver
 import org.xpathqs.driver.actions.IAction
 import org.xpathqs.driver.actions.SelectorInteractionAction
 import org.xpathqs.driver.exceptions.XPathQsException
-import org.xpathqs.driver.log.Log
-import java.time.Duration
+import org.xpathqs.log.Log
+import org.xpathqs.driver.log.action
+import org.xpathqs.driver.log.xpath
 
 open class Decorator(
     val origin: IExecutor

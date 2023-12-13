@@ -14,15 +14,14 @@ import org.xpathqs.driver.actions.IAction
 import org.xpathqs.driver.actions.MakeVisibleAction
 import org.xpathqs.driver.actions.SelectorInteractionAction
 import org.xpathqs.driver.constants.Messages
+import org.xpathqs.driver.exceptions.XPathQsException
 import org.xpathqs.driver.executor.ActionExecMap
 import org.xpathqs.driver.executor.CachedExecutor
 import org.xpathqs.driver.executor.Decorator
 import org.xpathqs.driver.executor.IExecutor
-import org.xpathqs.driver.extensions.click
-import org.xpathqs.driver.extensions.isHidden
-import org.xpathqs.driver.extensions.makeVisible
-import org.xpathqs.driver.extensions.waitForDisappear
-import org.xpathqs.driver.log.Log
+import org.xpathqs.driver.extensions.*
+import org.xpathqs.driver.model.IBaseModel
+import org.xpathqs.log.Log
 import org.xpathqs.driver.navigation.annotations.UI
 import org.xpathqs.driver.navigation.base.*
 import org.xpathqs.driver.page.Page
@@ -72,7 +71,7 @@ open class NavExecutor(
                         Log.action("trying to autoclose current block") {
                             if((curPage as? Block)?.hasAnnotation(UI.Nav.Autoclose::class) == true) {
                                 val closeBtn = (curPage as Block).findWithAnnotation(UI.Widgets.Back::class) ?:
-                                (curPage as Block).findWithAnnotation(UI.Widgets.ClickToClose::class)
+                                (curPage as Block).findWithAnnotation(UI.Widgets.ClickToFocusLost::class)
 
                                 closeBtn?.click()
                                 if(curPage is Page) {
@@ -86,8 +85,7 @@ open class NavExecutor(
                                         if(cp != null && cp != curPage) {
                                             return@repeat
                                         }
-                                        Log.info("Waiting for 500ms for navigator to change the page")
-                                        Thread.sleep(500)
+                                        wait(500.ms, "Waiting for 500ms for navigator to change the page")
                                         refreshCache()
                                     }
                                 }
@@ -106,6 +104,14 @@ open class NavExecutor(
                     Log.info("Текущая страница: " + endPage.name)
                 }
 
+                (action.on as? Block)?.let {
+                    if(it.isBlank) {
+                        it.staticBlockSelectors.firstOrNull {
+                            it.isHidden
+                        }?.makeVisible()
+                    }
+                }
+
                 if(action.on.isHidden) {
                     action.on.parents.reversed().forEach {
                         (it as? INavigable)?.navigate()
@@ -122,14 +128,22 @@ open class NavExecutor(
                         navigations.edgeList.forEach {
                             if(it.action != null) {
                                 it.action!!()
-                                Thread.sleep(500)
+                                wait(500.ms, "short delay after navigation action")
                                 refreshCache()
                             }
                             (it.to.nav as? ILoadable)?.waitForLoad(Duration.ofSeconds(30))
                         }
                     } else {
-                        action.on.parents.filterIsInstance<IBlockSelectorNavigation>()?.firstOrNull()?.let {
-                            it.navigate(action.on, navigator)
+                        action.on.parents.filterIsInstance<IBlockSelectorNavigation>().reversed().forEach {
+                            try {
+                                it.navigate(
+                                    action.on,
+                                    navigator,
+                                    IBaseModel()
+                                )
+                            } catch (e: XPathQsException.UnableToNavigate) {
+                               Log.error(e.message!!)
+                            }
                         }
                     }
                 }
@@ -145,15 +159,7 @@ open class NavExecutor(
     }
 
     protected fun executeAction(action: MakeVisibleAction) {
-    //    beforeAction(action)
-
-       /* val sel = action.on
-        if(sel.isHidden) {
-            val root = sel.rootParent
-            if(root is IBlockSelectorNavigation) {
-                root.navigate(sel, navigator)
-            }
-        }*/
+        //the processing of this action now in "before" interaction
     }
 
     override fun getAttr(selector: BaseSelector, attr: String): String {

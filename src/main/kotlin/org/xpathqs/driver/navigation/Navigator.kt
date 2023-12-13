@@ -8,8 +8,11 @@ import org.xpathqs.core.selector.block.Block
 import org.xpathqs.core.selector.extensions.rootParent
 import org.xpathqs.driver.constants.Messages
 import org.xpathqs.driver.exceptions.XPathQsException
+import org.xpathqs.driver.executor.CachedExecutor
 import org.xpathqs.driver.executor.IExecutor
-import org.xpathqs.driver.log.Log
+import org.xpathqs.driver.extensions.ms
+import org.xpathqs.driver.extensions.wait
+import org.xpathqs.log.Log
 import org.xpathqs.driver.navigation.annotations.UI
 import org.xpathqs.driver.navigation.annotations.UI.Visibility.Companion.UNDEF_STATE
 import org.xpathqs.driver.navigation.base.*
@@ -30,7 +33,7 @@ open class Navigator : INavigator {
     private val shortestPath = DijkstraShortestPath(graph)
 
     private val firstTimeDetection = HashSet<String>()
-
+    //private val prevPage: INavigableDetermination? = null
     
     fun register(page: INavigable) {
         page as ISelector
@@ -57,10 +60,11 @@ open class Navigator : INavigator {
             }
 
             val state = page::class.findAnnotation<UI.Nav.Config>()?.defaultState ?: UNDEF_STATE
-            val globalState = page::class.findAnnotation<UI.Nav.Config>() ?: UNDEF_STATE
             graph.addVertex(
                 NavWrapper.get(nav = page, state = state, globalState = UNDEF_STATE)
             )
+        } else {
+            Log.error("Page ${page.fullName} already registered")
         }
     }
 
@@ -89,7 +93,7 @@ open class Navigator : INavigator {
                         edges.add(newEdge)
                         graph.setEdgeWeight(newEdge, edge._weight)
                     } else {
-                        println("newEdge is null")
+                    //    println("newEdge is null")
                     }
 
                 }
@@ -133,15 +137,26 @@ open class Navigator : INavigator {
        pages
    }
 
+    var prevCurrentPage: INavigableDetermination? = null
+
     override val currentPage: INavigableDetermination
         get() {
-            return Log.action(Messages.Navigator.curPage) {
-
+            if(prevCurrentPage != null && executor is NavExecutor) {
+                if(((executor as NavExecutor).cachedExecutor).actual) {
+                    Log.info("Page was returned from cache: $prevCurrentPage")
+                    return prevCurrentPage ?: throw Exception("Expected page to be initialized")
+                }
+            }
+            prevCurrentPage = Log.action(Messages.Navigator.curPage) {
                 val res = sortedPages.find {
-                    Log.action(Messages.Navigator.checkPageIteration(it as Page)) {
-                        executor.isAllPresent(it.determination.exist)
-                                && (it.determination.notExist.isEmpty() ||
-                                             !executor.isAllPresent(it.determination.notExist))
+                    if(it is IUrlDetermination) {
+                        it.isOpen
+                    } else {
+                        Log.action(Messages.Navigator.checkPageIteration(it as Page)) {
+                            executor.isAllPresent(it.determination.exist)
+                                    && (it.determination.notExist.isEmpty() ||
+                                    !executor.isAllPresent(it.determination.notExist))
+                        }
                     }
                 }
                 if(res != null) {
@@ -163,7 +178,22 @@ open class Navigator : INavigator {
                     throw XPathQsException.CurrentPageNotFound()
                 }
             }
+            return prevCurrentPage ?: throw XPathQsException.CurrentPageNotFound()
         }
+
+    fun waitForCurrentPage(duration: Duration = Duration.ofSeconds(60)): INavigableDetermination {
+        val tsStart = System.currentTimeMillis()
+        while ((System.currentTimeMillis() - tsStart) < duration.toMillis()) {
+            try {
+                return currentPage
+            } catch (e: XPathQsException.CurrentPageNotFound) {
+                wait(500.ms, "short delay in waitForCurrentPage when it is not found")
+                (executor as? NavExecutor)?.cachedExecutor?.refreshCache()
+            }
+        }
+
+        throw XPathQsException.CurrentPageNotFound()
+    }
 
     fun findPath(from: NavWrapper?, to: NavWrapper?): GraphPath<NavWrapper, Edge>? {
         if(to == null) return null
@@ -184,12 +214,14 @@ open class Navigator : INavigator {
         navigations.edgeList.forEach {
             if(it.action != null) {
                 it.action!!()
-                Thread.sleep(500)
+                wait(500.ms, "short delay after navigation action in Navigator")
                 (executor as? NavExecutor)?.refreshCache()
             }
             (it.to.nav as? ILoadable)?.waitForLoad(Duration.ofSeconds(30))
             val cp = currentPage
             if((it.to.nav is INavigableDetermination && it.to.nav is Page) && it.to.nav != cp) {
+
+                currentPage
                 throw Exception("Wrong page")
             }
         }

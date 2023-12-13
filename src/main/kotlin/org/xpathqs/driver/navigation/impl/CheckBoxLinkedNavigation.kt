@@ -11,6 +11,8 @@ import org.xpathqs.core.selector.extensions.parents
 import org.xpathqs.core.selector.extensions.rootParent
 import org.xpathqs.driver.extensions.isVisible
 import org.xpathqs.driver.extensions.waitForVisible
+import org.xpathqs.driver.model.IBaseModel
+import org.xpathqs.log.Log
 import org.xpathqs.driver.navigation.annotations.UI
 import org.xpathqs.driver.navigation.base.IBlockSelectorNavigation
 import org.xpathqs.driver.navigation.base.INavigator
@@ -26,7 +28,7 @@ private class LinkWithCheckbox(
 class CheckBoxLinkedNavigation(
     private val base: IBlockSelectorNavigation
 ): IBlockSelectorNavigation {
-    override fun navigate(elem: ISelector, navigator: INavigator) {
+    override fun navigate(elem: ISelector, navigator: INavigator, model: IBaseModel) {
         if(elem is BaseSelector) {
             if(elem.isVisible) {
                 return
@@ -37,16 +39,17 @@ class CheckBoxLinkedNavigation(
                 }?.customPropsMap?.get(CHECKBOX_LINKED_KEY)
 
             (linkedCheckbox as? LinkWithCheckbox)?.let {
-                if(it.reverted) it.checkbox.uncheck() else it.checkbox.check()
-                elem.waitForVisible(Duration.ofSeconds(2))
-
+                Log.action("Trying to apply CheckBoxLinkedNavigation") {
+                    if(it.reverted) it.checkbox.uncheck() else it.checkbox.check()
+                    elem.waitForVisible(Duration.ofSeconds(2))
+                }
                 if(elem.isVisible) {
                     return
                 }
             }
         }
 
-        return base.navigate(elem, navigator)
+        base.navigate(elem, navigator, model)
     }
 }
 

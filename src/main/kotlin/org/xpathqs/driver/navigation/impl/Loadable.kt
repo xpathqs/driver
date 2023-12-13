@@ -6,7 +6,7 @@ import org.xpathqs.core.util.SelectorFactory.compose
 import org.xpathqs.driver.extensions.isHidden
 import org.xpathqs.driver.extensions.waitForFirstVisibleOf
 import org.xpathqs.driver.extensions.waitForVisible
-import org.xpathqs.driver.log.Log
+import org.xpathqs.log.Log
 import org.xpathqs.driver.navigation.base.ILoadable
 import org.xpathqs.driver.navigation.util.Loading
 import org.xpathqs.driver.navigation.util.LoadingParser

@@ -4,16 +4,18 @@ import org.xpathqs.core.selector.base.BaseSelector
 import org.xpathqs.core.selector.base.ISelector
 import org.xpathqs.core.selector.block.Block
 import org.xpathqs.core.selector.block.allInnerSelectors
+import org.xpathqs.core.selector.extensions.isChildOf
 import org.xpathqs.core.selector.extensions.rootParent
+import org.xpathqs.driver.extensions.getDefaultModel
 import org.xpathqs.driver.extensions.isVisible
 import org.xpathqs.driver.model.IBaseModel
 import org.xpathqs.log.Log
 import org.xpathqs.driver.navigation.base.IBlockSelectorNavigation
 import org.xpathqs.driver.navigation.base.INavigator
 
-private const val LINKED_VISIBILITY_KEY = "LINKED_VISIBILITY_KEY"
+private const val FILL_TO_MAKE_VISIBLE_OF = "LINKED_VISIBILITY_FILLED_KEY"
 
-class LinkedVisibilityNavigation(
+class FillToMakeVisibleOfNavigation(
     private val base: IBlockSelectorNavigation
 ): IBlockSelectorNavigation {
     override fun navigate(elem: ISelector, navigator: INavigator, model: IBaseModel) {
@@ -22,13 +24,17 @@ class LinkedVisibilityNavigation(
                 return
             }
             val elems = (elem.rootParent as? Block)?.allInnerSelectors?.filter {
-                it.customPropsMap.containsKey(LINKED_VISIBILITY_KEY)
+                it.customPropsMap.containsKey(FILL_TO_MAKE_VISIBLE_OF)
             }
             elems?.forEach { annotatedSelector ->
-                val linked = annotatedSelector.customPropsMap[LINKED_VISIBILITY_KEY] as LinkedVisibility<BaseSelector>
-                if(linked.sel == elem) {
-                    Log.action("Apply LinkedVisibilityNavigation") {
-                        linked.makeVisible.invoke(annotatedSelector)
+                val linked = annotatedSelector.customPropsMap[FILL_TO_MAKE_VISIBLE_OF] as LinkedVisibilityWhenFilled<BaseSelector>
+                if(linked.sel == elem || elem.isChildOf(linked.sel)) {
+                    Log.action("Apply FillToMakeVisibleOfNavigation") {
+                        linked.sel.getDefaultModel()?.let { model ->
+                            model.findPropBySel(annotatedSelector)?.let {p ->
+                                model.fill(p)
+                            }
+                        }
                     }
                     if(elem.isVisible) {
                         return
@@ -40,24 +46,15 @@ class LinkedVisibilityNavigation(
     }
 }
 
-class LinkedVisibility<T: BaseSelector>(
-    val sel: BaseSelector,
-    val checkLambda: (T) -> Boolean,
-    val makeVisible: (T) -> Unit,
-    val makeHidden: (T) -> Unit
+class LinkedVisibilityWhenFilled<T: BaseSelector>(
+    val sel: BaseSelector
 )
 
-fun <T: BaseSelector> T.linkVisibilityOf(
-    sel: BaseSelector,
-    checkLambda: (T) -> Boolean,
-    makeVisible: (T) -> Unit,
-    makeHidden: (T) -> Unit
+fun <T: BaseSelector> T.fillToMakeVisibleOf(
+    sel: BaseSelector
 ) : T {
-    this.customPropsMap[LINKED_VISIBILITY_KEY] = LinkedVisibility<T>(
-        sel,
-        checkLambda,
-        makeVisible,
-        makeHidden
+    this.customPropsMap[FILL_TO_MAKE_VISIBLE_OF] = LinkedVisibilityWhenFilled<T>(
+        sel
     )
     return this
 }

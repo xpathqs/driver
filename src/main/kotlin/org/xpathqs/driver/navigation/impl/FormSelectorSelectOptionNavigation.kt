@@ -6,6 +6,8 @@ import org.xpathqs.core.selector.block.findWithAnnotation
 import org.xpathqs.core.selector.extensions.parents
 import org.xpathqs.driver.extensions.click
 import org.xpathqs.driver.extensions.isVisible
+import org.xpathqs.driver.model.IBaseModel
+import org.xpathqs.log.Log
 import org.xpathqs.driver.navigation.annotations.UI
 import org.xpathqs.driver.navigation.base.IBlockSelectorNavigation
 import org.xpathqs.driver.navigation.base.IModelBlock
@@ -15,14 +17,16 @@ import kotlin.reflect.full.createInstance
 class FormSelectorSelectOptionNavigation(
     private val base: IBlockSelectorNavigation
 ): IBlockSelectorNavigation {
-    override fun navigate(elem: ISelector, navigator: INavigator) {
+    override fun navigate(elem: ISelector, navigator: INavigator, model: IBaseModel) {
         if(elem is BaseSelector) {
             if(elem.isVisible) {
                 return
             }
             if(elem.hasAnnotation(UI.Widgets.OptionItem::class)) {
                 if(elem.base is Block) {
-                    (elem.base as Block).findWithAnnotation(UI.Widgets.Select::class)?.click()
+                    Log.action("Apply FormSelectorSelectOptionNavigation") {
+                        (elem.base as Block).findWithAnnotation(UI.Widgets.Select::class)?.click()
+                    }
                     if(elem.isVisible) {
                         return
                     }
@@ -30,6 +34,6 @@ class FormSelectorSelectOptionNavigation(
             }
         }
 
-        return base.navigate(elem, navigator)
+        base.navigate(elem, navigator, model)
     }
 }

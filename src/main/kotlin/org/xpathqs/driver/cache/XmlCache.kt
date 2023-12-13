@@ -5,7 +5,7 @@ import org.xml.sax.InputSource
 import org.xpathqs.driver.cache.evaluator.AttributeEvaluator
 import org.xpathqs.driver.cache.evaluator.CacheEvaluator
 import org.xpathqs.driver.cache.evaluator.Evaluator
-import org.xpathqs.driver.log.Log
+import org.xpathqs.log.Log
 import java.io.StringReader
 import java.util.regex.Pattern
 import javax.xml.parsers.DocumentBuilder

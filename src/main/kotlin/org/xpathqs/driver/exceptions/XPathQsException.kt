@@ -1,5 +1,6 @@
 package org.xpathqs.driver.exceptions
 
+import org.xpathqs.core.selector.base.ISelector
 import org.xpathqs.driver.actions.IAction
 import org.xpathqs.driver.executor.IExecutor
 import org.xpathqs.driver.page.Page
@@ -29,5 +30,13 @@ open class XPathQsException(
 
     class ModelDoesntHaveMutableProps(model: IBaseModel) : XPathQsException (
         msg = "${model::class.simpleName} doesn't have a mutable (var) properties"
+    )
+
+    class IncorrectPageState(page: Page, state: Int) : XPathQsException (
+        msg = "$page with state: $state was not loaded"
+    )
+
+    class UnableToNavigate(sel: ISelector) : XPathQsException(
+        msg = "Unable to navigate to the ${sel.fullName}"
     )
 }

@@ -13,7 +13,7 @@ open class MkDriver : IDriver {
 
     }
 
-    override fun clear(selector: ISelector) {
+    override fun clear(selector: ISelector, clickSelector: ISelector) {
 
     }
 

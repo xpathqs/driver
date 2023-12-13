@@ -7,6 +7,8 @@ import org.xpathqs.core.selector.base.findAnyParentAnnotation
 import org.xpathqs.core.selector.extensions.parents
 import org.xpathqs.core.selector.extensions.rootParent
 import org.xpathqs.driver.extensions.isVisible
+import org.xpathqs.driver.model.IBaseModel
+import org.xpathqs.log.Log
 import org.xpathqs.driver.navigation.annotations.UI
 import org.xpathqs.driver.navigation.base.IBlockSelectorNavigation
 import org.xpathqs.driver.navigation.base.INavigator
@@ -15,7 +17,7 @@ import org.xpathqs.driver.navigation.base.IPageInternalState
 class InternalPageStateNavigation(
     private val base: IBlockSelectorNavigation
 ): IBlockSelectorNavigation {
-    override fun navigate(elem: ISelector, navigator: INavigator) {
+    override fun navigate(elem: ISelector, navigator: INavigator, model: IBaseModel) {
         if(elem is BaseSelector) {
             if(elem.isVisible) {
                 return
@@ -24,7 +26,9 @@ class InternalPageStateNavigation(
                 it.findAnnotation<UI.Visibility.Dynamic>()?.let { ann ->
                     if (ann.internalState != UI.Visibility.UNDEF_STATE) {
                         (elem.rootParent as? IPageInternalState)?.let {
-                            it.pageInternalState = ann.internalState
+                            Log.action("Apply InternalPageStateNavigation") {
+                                it.pageInternalState = ann.internalState
+                            }
                             if(elem.isVisible) {
                                 return
                             }
@@ -34,6 +38,6 @@ class InternalPageStateNavigation(
             }
 
         }
-        return base.navigate(elem, navigator)
+        base.navigate(elem, navigator, model)
     }
 }

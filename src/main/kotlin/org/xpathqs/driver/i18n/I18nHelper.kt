@@ -1,6 +1,6 @@
 package org.xpathqs.driver.i18n
 
-import org.xpathqs.driver.log.Log
+import org.xpathqs.log.Log
 import org.xpathqs.prop.PropParser
 import org.xpathqs.prop.impl.YmlModelExtractor
 import java.lang.IllegalArgumentException

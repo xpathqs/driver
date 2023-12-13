@@ -3,7 +3,7 @@ package org.xpathqs.driver.cache
 import org.xpathqs.driver.cache.evaluator.AttributeEvaluator
 import org.xpathqs.driver.cache.evaluator.IEvaluator
 import org.xpathqs.driver.constants.Messages
-import org.xpathqs.driver.log.Log
+import org.xpathqs.log.Log
 import org.xpathqs.log.style.StyleFactory
 
 abstract class Cache : ICache {

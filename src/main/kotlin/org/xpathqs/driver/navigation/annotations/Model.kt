@@ -48,6 +48,12 @@ class Model {
             AnnotationTarget.PROPERTY,
         )
         @Retention(AnnotationRetention.RUNTIME)
+        annotation class IgnoreSpaces
+
+        @Target(
+            AnnotationTarget.PROPERTY,
+        )
+        @Retention(AnnotationRetention.RUNTIME)
         annotation class StartsWith
     }
 

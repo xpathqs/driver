@@ -4,7 +4,7 @@ import org.xpathqs.core.selector.base.ISelector
 import org.xpathqs.driver.cache.Cache
 import org.xpathqs.driver.cache.XmlCache
 import org.xpathqs.driver.executor.IExecutor
-import org.xpathqs.driver.log.Log
+import org.xpathqs.log.Log
 import org.xpathqs.driver.navigation.Navigator
 import org.xpathqs.driver.page.Page
 import org.xpathqs.log.BaseLogger

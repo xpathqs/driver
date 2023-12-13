@@ -6,6 +6,7 @@ import org.xpathqs.core.selector.base.findAnnotation
 import org.xpathqs.core.selector.extensions.parents
 import org.xpathqs.driver.extensions.isVisible
 import org.xpathqs.driver.extensions.waitForVisible
+import org.xpathqs.log.Log
 import org.xpathqs.driver.model.IBaseModel
 import org.xpathqs.driver.model.IModelStates
 import org.xpathqs.driver.navigation.annotations.UI
@@ -16,7 +17,7 @@ import org.xpathqs.driver.navigation.base.INavigator
 class ModelStateSelectorNavigation(
     private val base: IBlockSelectorNavigation
 ): IBlockSelectorNavigation {
-    override fun navigate(elem: ISelector, navigator: INavigator) {
+    override fun navigate(elem: ISelector, navigator: INavigator, model: IBaseModel) {
         if(elem is BaseSelector) {
             if(elem.isVisible) {
                 return
@@ -25,31 +26,34 @@ class ModelStateSelectorNavigation(
             if(ann != null) {
                 if (ann.modelState >= 0) {
                     elem.parents.filterIsInstance<IModelBlock<*>>().firstOrNull()?.let {
-                        if(ann.modelState == IBaseModel.DEFAULT) {
-                            if(ann.submitModel) {
-                                it().submit()
-                            } else {
-                                it().fill(noSubmit = true)
-                            }
-                        } else {
-                            val model = it()
-                            val waifForLoad = ann.modelState != IBaseModel.INCORRECT
-                            if(model.view is IModelStates) {
+                        Log.action("Apply ModelStateSelectorNavigation") {
+                            if(ann.modelState == IBaseModel.DEFAULT) {
                                 if(ann.submitModel) {
-                                    model.view.states[ann.modelState]?.submit(waifForLoad)
+                                    it().submit()
                                 } else {
-                                    model.view.states[ann.modelState]?.fill(noSubmit = true)
+                                    it().fill(noSubmit = true)
                                 }
                             } else {
-                                if(ann.submitModel) {
-                                    model.states[ann.modelState]?.submit(waifForLoad)
+                                val model = it()
+                                val waitForLoad = ann.modelState != IBaseModel.INCORRECT
+                                if(model.view is IModelStates) {
+                                    if(ann.submitModel) {
+                                        model.view.states[ann.modelState]?.submit(waitForLoad = waitForLoad)
+                                    } else {
+                                        model.view.states[ann.modelState]?.fill(noSubmit = true)
+                                    }
                                 } else {
-                                    model.states[ann.modelState]?.fill(noSubmit = true)
+                                    if(ann.submitModel) {
+                                        model.states[ann.modelState]?.submit(waitForLoad = waitForLoad)
+                                    } else {
+                                        model.states[ann.modelState]?.fill(noSubmit = true)
+                                    }
                                 }
                             }
+
+                            elem.waitForVisible()
                         }
 
-                        elem.waitForVisible()
                         if(elem.isVisible) {
                             return
                         }
@@ -58,6 +62,6 @@ class ModelStateSelectorNavigation(
             }
         }
 
-        return base.navigate(elem, navigator)
+        base.navigate(elem, navigator, model)
     }
 }

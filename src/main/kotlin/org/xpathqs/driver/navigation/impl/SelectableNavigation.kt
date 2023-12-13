@@ -11,6 +11,8 @@ import org.xpathqs.core.selector.extensions.isChildOf
 import org.xpathqs.core.selector.extensions.rootParent
 import org.xpathqs.driver.extensions.click
 import org.xpathqs.driver.extensions.isVisible
+import org.xpathqs.driver.model.IBaseModel
+import org.xpathqs.log.Log
 import org.xpathqs.driver.navigation.annotations.UI
 import org.xpathqs.driver.navigation.base.IBlockSelectorNavigation
 import org.xpathqs.driver.navigation.base.INavigator
@@ -19,7 +21,7 @@ import org.xpathqs.driver.widgets.IFormSelect
 class SelectableNavigation(
     private val base: IBlockSelectorNavigation
 ): IBlockSelectorNavigation {
-    override fun navigate(elem: ISelector, navigator: INavigator) {
+    override fun navigate(elem: ISelector, navigator: INavigator, model: IBaseModel) {
         if(elem is BaseSelector) {
             if(elem.isVisible) {
                 return
@@ -32,10 +34,12 @@ class SelectableNavigation(
                 ann?.onSelected?.forEach {
                     val obj = it.objectInstance
                     if(obj != null && elem.isChildOf(obj)) {
-                        selectable.selectAny()
+                        Log.action("Apply SelectableNavigation") {
+                            selectable.selectAny()
 
-                        if(elem.hasAnnotation(UI.Widgets.ValidationError::class)) {
-                            (elem.rootParent as? Block)?.findWithAnnotation(UI.Widgets.Submit::class)?.click()
+                            if(elem.hasAnnotation(UI.Widgets.ValidationError::class)) {
+                                (elem.rootParent as? Block)?.findWithAnnotation(UI.Widgets.Submit::class)?.click()
+                            }
                         }
 
                         if(elem.isVisible) {
@@ -46,6 +50,6 @@ class SelectableNavigation(
             }
         }
 
-        return base.navigate(elem, navigator)
+        base.navigate(elem, navigator, model)
     }
 }

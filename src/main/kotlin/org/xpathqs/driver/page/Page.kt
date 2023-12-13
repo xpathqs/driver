@@ -18,10 +18,10 @@ open class Page(
         get() = title.ifEmpty { super.name }
 
     override fun equals(other: Any?): Boolean {
-        return name == (other as? Page)?.name ?: false
+        return fullName == (other as? Page)?.fullName ?: false
     }
 
     override fun hashCode(): Int {
-        return name.hashCode()
+        return fullName.hashCode()
     }
 }

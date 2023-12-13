@@ -1,11 +1,16 @@
 package org.xpathqs.driver.navigation.util
 
+import org.xpathqs.core.selector.NullSelector
 import org.xpathqs.core.selector.base.*
-import org.xpathqs.core.selector.block.Block
-import org.xpathqs.core.selector.block.allInnerSelectors
-import org.xpathqs.core.selector.block.selectorBlocks
-import org.xpathqs.core.selector.block.selectors
+import org.xpathqs.core.selector.block.*
 import org.xpathqs.core.selector.extensions.rootParent
+import org.xpathqs.driver.actions.WaitAction
+import org.xpathqs.driver.constants.Global
+import org.xpathqs.driver.executor.CachedExecutor
+import org.xpathqs.driver.executor.Decorator
+import org.xpathqs.driver.extensions.ms
+import org.xpathqs.driver.extensions.wait
+import org.xpathqs.driver.navigation.NavExecutor
 import org.xpathqs.driver.navigation.annotations.UI
 import org.xpathqs.driver.navigation.annotations.WaitForLoadEnum
 import org.xpathqs.driver.navigation.base.INavigableDetermination
@@ -16,9 +21,20 @@ class LoadingParser(
     private val block: Block
 ) {
     fun parse(): Loading {
-        var selectors = block.allInnerSelectors
+        var selectors = block.allInnerSelectors + block.allInnerSelectorBlocks.filter { it.base !is NullSelector }
         if(block is IPageState) {
-            val state = (block as IPageState).pageState
+            var state = (block as IPageState).pageState
+
+            if(state == UI.Visibility.UNDEF_STATE) {
+                var repeatCount = 0
+                while (repeatCount < 5 && state == UI.Visibility.UNDEF_STATE) {
+                    wait(500.ms, "delay in LoadingParser before refreshing the page")
+                    (Global.executor as Decorator).findOriginInstance<CachedExecutor>()?.refreshCache()
+                    repeatCount++
+                    state = (block as IPageState).pageState
+                }
+            }
+
             selectors = selectors.filter {
                 val ann = it.findAnyParentAnnotation<UI.Visibility.State>()
                 ann == null || state == ann.value
@@ -29,6 +45,12 @@ class LoadingParser(
         val allColl = ArrayList<BaseSelector>()
         val oneOfSelectors = block.getOneOfSelectors()
 
+        block.findAnnotation<UI.Nav.WaitForLoad>()?.let {
+            if(it.type == WaitForLoadEnum.LOAD_SELF) {
+                return Loading(loadSelector = block)
+            }
+        }
+
         if(oneOfSelectors.isNotEmpty()) {
             return Loading(loadAnySelectors = oneOfSelectors)
         }
@@ -36,19 +58,32 @@ class LoadingParser(
         selectors.forEach { sel ->
             val ann = sel.findAnyParentAnnotation<UI.Nav.WaitForLoad>()
                 ?: sel.findAnnotation<UI.Nav.WaitForLoad>()
-            ann?.let {
-                when(it.type) {
+            if(ann != null) {
+                when(ann.type) {
+                    WaitForLoadEnum.LOAD_SELF -> {}
                     WaitForLoadEnum.LOAD_ANY -> anyColl.add(sel)
                     WaitForLoadEnum.LOAD_ALL -> allColl.add(sel)
-                    else -> {}
+                    WaitForLoadEnum.LOAD_ERROR -> {}
                 }
             }
         }
 
+        if(anyColl.isEmpty() && allColl.isEmpty()) {
+            (block as? INavigableDetermination)?.determination?.let {
+                if(it.exist.isNotEmpty()) {
+                    allColl.addAll(it.exist)
+                }
+            }
+        }
+
+        val filteredAll = allColl.filter {
+            !it.hasAnnotation(UI.Visibility.Dynamic::class)
+        }
+
         return if(anyColl.isNotEmpty()) {
              Loading(loadAnySelectors = anyColl)
-        } else if(allColl.isNotEmpty()) {
-            Loading(loadAllSelectors = allColl)
+        } else if(filteredAll.isNotEmpty()) {
+            Loading(loadAllSelectors = filteredAll)
         } else {
             //BackendGroup ...
             Loading(

@@ -7,6 +7,7 @@ import org.xpathqs.core.selector.extensions.parentCount
 import org.xpathqs.driver.extensions.click
 import org.xpathqs.driver.extensions.cls
 import org.xpathqs.driver.extensions.isVisible
+import org.xpathqs.driver.model.IBaseModel
 import org.xpathqs.driver.navigation.annotations.UI
 import org.xpathqs.driver.navigation.base.IBlockSelectorNavigation
 import org.xpathqs.driver.navigation.base.INavigator
@@ -39,7 +40,7 @@ open class CheckBox(
         return isChecked
     }
 
-    override fun navigate(elem: ISelector, navigator: INavigator) {
+    override fun navigate(elem: ISelector, navigator: INavigator, model: IBaseModel) {
         if(elem == checkActiveSelector) {
             check()
         }

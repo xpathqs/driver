@@ -2,7 +2,7 @@ package org.xpathqs.driver.navigation.annotations
 
 import org.xpathqs.core.selector.base.BaseSelector
 import org.xpathqs.core.selector.block.Block
-import org.xpathqs.driver.constants.Global.WAIT_FOR_ELEMENT_TIMEOUT
+import org.xpathqs.driver.navigation.annotations.UI.Visibility.Companion.UNDEF_STATE
 import kotlin.reflect.KClass
 
 class UI {
@@ -73,7 +73,7 @@ class UI {
             AnnotationTarget.PROPERTY
         )
         @Retention(AnnotationRetention.RUNTIME)
-        annotation class ClickToClose
+        annotation class ClickToFocusLost
 
         @Target(
             AnnotationTarget.CLASS,
@@ -103,6 +103,7 @@ class UI {
             val onSelected: Array<KClass<out BaseSelector>> = [],
         )
     }
+
     class Visibility {
         @Target(
             AnnotationTarget.CLASS,
@@ -119,10 +120,15 @@ class UI {
         annotation class Dynamic(
             val modelState: Int = UNDEF_STATE,
             val modelClass: KClass<*> = Any::class,
+            val modelSubmitFirst: Boolean = false,
             val modelDepends: Int = UNDEF_STATE,
             val submitModel: Boolean = false,
             val overlapped: Boolean = false,
             val internalState: Int = UNDEF_STATE,
+
+            //Annotation may be applied for specific page states
+            val canApplyForGlobalState: Int = UNDEF_STATE,
+            val canApplyForGlobalStateGroup: Int = UNDEF_STATE
         )
 
         @Target(
@@ -148,11 +154,34 @@ class UI {
             val value: Int
         )
 
+        @Target(
+            AnnotationTarget.CLASS,
+            AnnotationTarget.PROPERTY
+        )
+        @Retention(AnnotationRetention.RUNTIME)
+        annotation class GlobalState(
+            val value: Int,
+            val stateGroup: Int = UNDEF_STATE
+        )
+
         companion object {
             const val UNDEF_STATE = -1
             const val DEFAULT_STATE = 0
         }
     }
+
+    class Enable {
+        @Target(
+            AnnotationTarget.CLASS,
+            AnnotationTarget.PROPERTY
+        )
+        @Retention(AnnotationRetention.RUNTIME)
+        annotation class GlobalState(
+            val value: Int,
+            val group: Int = UNDEF_STATE
+        )
+    }
+
     class Nav {
         @Target(
             AnnotationTarget.CLASS,
@@ -181,6 +210,7 @@ class UI {
             val selfPageState: Int = UNDEF,
             val modelState: Int = UNDEF,
             val globalState: Int = UNDEF,
+            val loadSeconds: Int = UNDEF
         ) {
             companion object {
                 const val UNDEF = -1
@@ -218,7 +248,7 @@ class UI {
         )
         @Retention(AnnotationRetention.RUNTIME)
         annotation class WaitForLoad(
-            val type: WaitForLoadEnum = WaitForLoadEnum.LOAD_ANY,
+            val type: WaitForLoadEnum = WaitForLoadEnum.LOAD_ALL,
             val durationMs: Long = -1
         )
 

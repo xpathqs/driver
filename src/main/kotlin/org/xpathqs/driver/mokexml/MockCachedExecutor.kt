@@ -7,16 +7,18 @@ import org.xpathqs.driver.cache.Cache
 import org.xpathqs.driver.cache.ICache
 import org.xpathqs.driver.cache.XmlCache
 import org.xpathqs.driver.executor.*
+import org.xpathqs.driver.moke.MkNavigator
 
 open class MockCachedExecutor(
     origin: IExecutor,
     cache: ICache = XmlCache()
-) : CachedExecutor(origin, cache) {
+) : CachedExecutor(origin, cache, MkNavigator()) {
 
     constructor(xml: String, cache: ICache = XmlCache()): this(
         CachedExecutor(
             Executor(MockDriver(xml)),
-            cache
+            cache,
+            MkNavigator()
         ),
         cache
     )

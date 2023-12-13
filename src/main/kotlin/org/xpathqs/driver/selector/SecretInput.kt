@@ -10,10 +10,12 @@ open class SecretInput(
     state: SelectorState = SelectorState.INIT,
     base: ISelector = NullSelector(),
     name: String = "",
+    fullName: String = "",
     props: SelectorProps = SelectorProps()
 ) : Selector(
     state,
     base,
     name,
+    fullName,
     props
 )

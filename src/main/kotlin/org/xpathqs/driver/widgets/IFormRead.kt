@@ -5,4 +5,5 @@ interface IFormRead {
     fun readString() = ""
     fun readBool() = false
     fun isReady() = true
+    fun isDisabled() = false
 }

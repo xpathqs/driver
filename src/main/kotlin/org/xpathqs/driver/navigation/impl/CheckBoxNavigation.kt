@@ -8,8 +8,11 @@ import org.xpathqs.core.selector.block.Block
 import org.xpathqs.core.selector.block.allInnerSelectors
 import org.xpathqs.core.selector.extensions.isChildOf
 import org.xpathqs.core.selector.extensions.rootParent
+import org.xpathqs.driver.extensions.isHidden
 import org.xpathqs.driver.extensions.isVisible
 import org.xpathqs.driver.extensions.waitForVisible
+import org.xpathqs.driver.model.IBaseModel
+import org.xpathqs.log.Log
 import org.xpathqs.driver.navigation.annotations.UI
 import org.xpathqs.driver.navigation.base.IBlockSelectorNavigation
 import org.xpathqs.driver.navigation.base.INavigator
@@ -19,43 +22,54 @@ import java.time.Duration
 class CheckBoxNavigation(
     private val base: IBlockSelectorNavigation
 ): IBlockSelectorNavigation {
-    override fun navigate(elem: ISelector, navigator: INavigator) {
+    override fun navigate(elem: ISelector, navigator: INavigator, model: IBaseModel) {
         if(elem is BaseSelector) {
             if(elem.isVisible) {
                 return
             }
-            val cb = (elem.rootParent as? Block)?.allInnerSelectors?.firstOrNull {
+            (elem.rootParent as? Block)?.allInnerSelectors?.filter {
                 it.hasAnnotation(UI.Widgets.Checkbox::class)
-            }
-            if(cb != null && cb is CheckBox) {
-                val ann = cb.findAnnotation<UI.Widgets.Checkbox>()
-                if(ann != null) {
-                    var wasFound = false
-                    if(ann.visibilityOf != Block::class) {
-                        val block = ann.visibilityOf.objectInstance
-                        if(block != null && elem.isChildOf(block)) {
-                            cb.check()
-                            wasFound = true
-                        }
+            }?.forEach { cb ->
+                if (cb != null && cb is CheckBox) {
+                    val ann = cb.findAnnotation<UI.Widgets.Checkbox>()
+                    if (ann != null) {
+                        var wasFound = false
+                        if (ann.visibilityOf != BaseSelector::class) {
+                            val block = ann.visibilityOf.objectInstance
+                            if (block != null && (elem.isChildOf(block) || elem === block)) {
+                                Log.action("Apply CheckBoxNavigation") {
+                                    cb.check()
+                                    wasFound = true
+                                }
+                            }
 
-                    } else {
-                        val checkedBlock = ann.onChecked.objectInstance
-                        val uncheckedBlock = ann.onUnchecked.objectInstance
+                        } else {
+                            val checkedBlock = ann.onChecked.objectInstance
+                            val uncheckedBlock = ann.onUnchecked.objectInstance
 
-                        if(checkedBlock != null && uncheckedBlock != null) {
-                            if(elem.isChildOf(checkedBlock)) {
-                                cb.check()
-                                wasFound = true
-                            } else if(elem.isChildOf(uncheckedBlock)) {
-                                cb.uncheck()
-                                wasFound = true
+                            if (checkedBlock != null && uncheckedBlock != null) {
+                                if (elem.isChildOf(checkedBlock) || elem === checkedBlock) {
+                                    Log.action("Apply CheckBoxNavigation") {
+                                        cb.check()
+                                        wasFound = true
+                                    }
+                                } else if (elem.isChildOf(uncheckedBlock) || elem === uncheckedBlock) {
+                                    Log.action("Apply CheckBoxNavigation") {
+                                        cb.uncheck()
+                                        wasFound = true
+                                    }
+                                }
                             }
                         }
-                    }
+                        if (wasFound) {
+                            Log.info("Selector was found")
+                            elem.waitForVisible(Duration.ofSeconds(1))
+                            if(elem.isHidden) {
+                                Log.error("Selector is still hidden even after checkbox navigation")
+                            }
+                        }
 
-                    if(wasFound) {
-                        elem.waitForVisible(Duration.ofSeconds(1))
-                        if(elem.isVisible) {
+                        if (elem.isVisible) {
                             return
                         }
                     }
@@ -63,6 +77,6 @@ class CheckBoxNavigation(
             }
         }
 
-        return base.navigate(elem, navigator)
+        base.navigate(elem, navigator, model)
     }
 }

@@ -10,7 +10,8 @@ import org.xpathqs.driver.constants.Global
 import org.xpathqs.driver.extensions.click
 import org.xpathqs.driver.extensions.isVisible
 import org.xpathqs.driver.extensions.makeVisible
-import org.xpathqs.driver.log.Log
+import org.xpathqs.driver.model.IBaseModel
+import org.xpathqs.log.Log
 import org.xpathqs.driver.navigation.NavExecutor
 import org.xpathqs.driver.navigation.annotations.UI
 import org.xpathqs.driver.navigation.base.IBlockSelectorNavigation
@@ -19,7 +20,7 @@ import org.xpathqs.driver.navigation.base.INavigator
 class ClickToBackNavigation(
     private val base: IBlockSelectorNavigation
 ): IBlockSelectorNavigation {
-    override fun navigate(elem: ISelector, navigator: INavigator) {
+    override fun navigate(elem: ISelector, navigator: INavigator, model: IBaseModel) {
         if(elem is BaseSelector) {
             if(elem.isVisible) {
                 return
@@ -29,7 +30,7 @@ class ClickToBackNavigation(
                 (cp as? Block)?.allInnerSelectors?.firstOrNull {
                     it.hasAnnotation(UI.Widgets.Back::class)
                 }?.let {
-                    Log.action("The 'Click to Back' selector was found") {
+                    Log.action("Apply ClickToBackNavigation") {
                         if(it.isVisible) {
                             it.click()
 
@@ -47,6 +48,6 @@ class ClickToBackNavigation(
             }
         }
 
-        return base.navigate(elem, navigator)
+        base.navigate(elem, navigator, model)
     }
 }

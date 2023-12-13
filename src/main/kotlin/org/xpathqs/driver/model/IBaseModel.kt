@@ -12,12 +12,15 @@ import org.xpathqs.core.selector.extensions.parents
 import org.xpathqs.core.selector.extensions.rootParent
 import org.xpathqs.core.selector.extensions.simpleName
 import org.xpathqs.core.selector.extensions.text
+import org.xpathqs.driver.constants.Global
 import org.xpathqs.driver.exceptions.XPathQsException
 import org.xpathqs.driver.extensions.*
-import org.xpathqs.driver.log.Log
+import org.xpathqs.log.Log
+import org.xpathqs.driver.navigation.NavExecutor
 import org.xpathqs.driver.navigation.annotations.Model
 import org.xpathqs.driver.navigation.annotations.UI
 import org.xpathqs.driver.navigation.base.*
+import org.xpathqs.driver.page.Page
 import org.xpathqs.driver.util.clone
 import org.xpathqs.driver.util.newInstance
 import org.xpathqs.driver.widgets.*
@@ -40,6 +43,9 @@ open class IBaseModel(
     private val comporator: IModelComporator = DefaultComparator()
 ) {
     private var mappingsInitialized = false
+    var isInitialized = false
+
+    var triggerModelNavigationByProp = true
 
     val mappingsDelegate = resetableLazy {
         val res = LinkedHashMap<KProperty<*>, BaseSelector>()
@@ -57,6 +63,11 @@ open class IBaseModel(
 
     private var isNullSelector: Boolean = false
     private var isDelegatesUsed: Boolean = false
+
+    private val currentPage: Page?
+        get() {
+            return (Global.executor as? NavExecutor)?.navigator?.currentPage as? Page
+        }
 
     open val reflectionMappings: LinkedHashMap<KProperty<*>, BaseSelector>
         by lazy {
@@ -136,7 +147,7 @@ open class IBaseModel(
 
     private val filledProps = HashSet<KProperty<*>>()
 
-    open fun default() {
+    open fun setDefaultValues() {
     }
 
     fun<T: IBaseModel> T.applyModel(l: T.()->Unit): T {
@@ -161,13 +172,22 @@ open class IBaseModel(
 
     private var submitCalled = false
     
-    open fun submit(waitForLoad: Boolean = true) {
+    open fun submit(
+        loadDuration: Duration = 30.seconds,
+        waitForLoad: Boolean = true
+    ) {
         submitCalled = false
 
       //  if(!propTrig) {
             fill(other = modelFromUi)
       //  }
         beforeSubmit()
+        val originPage = view?.rootParent as? Block
+
+        if(hasValidationError) {
+            Log.error("Form was not filled correctly")
+        }
+
         if(!submitCalled) {
             findWidget(UI.Widgets.Submit::class)?.click()
         }
@@ -177,7 +197,18 @@ open class IBaseModel(
             if(p != null) {
                 val pathTo = p.findAnnotation<UI.Nav.PathTo>()?.bySubmit?.objectInstance
                 if(pathTo is ILoadable) {
-                    pathTo.waitForLoad(Duration.ofSeconds(30))
+                    pathTo.waitForLoad(2.seconds)
+                    val currentPage = currentPage
+
+                    if(currentPage == pathTo) {
+                        pathTo.waitForLoad(loadDuration)
+                    } else {
+                        if(currentPage == originPage) {
+                            if(hasValidationError) {
+                                Log.error("Form was not filled correctly")
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -195,9 +226,9 @@ open class IBaseModel(
                 }
                 val block = s.rootParent
                 if(block is Block) {
-                    block.findWithAnnotation(UI.Widgets.ClickToClose::class)?.let {
+                    block.findWithAnnotation(UI.Widgets.ClickToFocusLost::class)?.let {
                         it.click()
-                        Thread.sleep(100)
+                        wait(100.ms, "short delay after click to focus lost")
                     }
                 }
 
@@ -210,13 +241,13 @@ open class IBaseModel(
             val newObj = this.newInstance()
 
             mappings.keys.forEach {
-                val v = it.call(this)
+                val v = getValue(it)
                 if(v is String) {
                     if(v.isEmpty()) {
                         return true
                     }
                 } else if(v is Boolean) {
-                    val defV = it.call(newObj)
+                    val defV = newObj.getValue(it)
                     if(v != defV) {
                         return true
                     }
@@ -225,6 +256,13 @@ open class IBaseModel(
 
             return false
         }
+
+    private fun getValue(prop: KProperty<*>) : Any? {
+        val parent = findParent(this, prop)
+        return safeTry {
+            prop.call(parent ?: this)
+        }
+    }
 
     open fun invalidate(sel: BaseSelector) {
         val prop = findPropBySel(sel)!!
@@ -295,10 +333,10 @@ open class IBaseModel(
                         if(v is String && v.isEmpty()) {
                             sel.clear()
                         } else {
-                            sel.input(v.toString())
+                            sel.input(v.toString(), this@IBaseModel)
                         }
                     } else {
-                        sel.input(v.toString())
+                        sel.input(v.toString(), model = this@IBaseModel)
                     }
                 }
             } else {
@@ -318,14 +356,19 @@ open class IBaseModel(
         }
     }
 
-    open fun fill(noSubmit: Boolean = false, other: IBaseModel? = null) {
+    open fun fill(noSubmit: Boolean = true, checkLambda: (() -> Boolean)? = null, other: IBaseModel? = null) {
         filledProps.clear()
         checkFilled = true
         beforeFill()
         if(this is IOrderedSteps) {
-            evalActions(steps, noSubmit, other)
+            evalActions(steps, noSubmit, other, checkLambda)
         } else {
             this.mappings.keys.forEach {
+                if(checkLambda != null) {
+                    if(checkLambda()) {
+                        return@forEach
+                    }
+                }
                 fill(it as KMutableProperty<*>, other)
             }
         }
@@ -335,7 +378,12 @@ open class IBaseModel(
         afterFill()
     }
 
-    private fun evalActions(steps: Collection<InputAction>, noSubmit: Boolean = false, other: IBaseModel? = null) {
+    private fun evalActions(
+        steps: Collection<InputAction>,
+        noSubmit: Boolean = false,
+        other: IBaseModel? = null,
+        checkLambda: (() -> Boolean)? = null
+    ) {
         checkFilled = true
         steps.forEach {
             val action = if(it is SwitchInputAction) {
@@ -345,6 +393,12 @@ open class IBaseModel(
             }
 
             action.props.forEach { prop ->
+                if(checkLambda != null) {
+                    if(checkLambda()) {
+                        return@forEach
+                    }
+                }
+
                 val it = if( prop.getter.parameters.isEmpty()) {
                     this.mappings.keys.filter { it.fullName == prop.fullName }.firstOrNull()
                 } else {
@@ -380,9 +434,11 @@ open class IBaseModel(
                 //}
             }
 
-            Thread.sleep(500) //short delay after input action
+            wait(500.ms, "short delay after input action")
             if(action.type == InputType.SUBMIT && !noSubmit) {
-                Thread.sleep(500)
+                wait(500.ms, "short delay before submit")
+                fixValidationError(this)
+
                 val sel =
                     if(action.props.isEmpty()) {
                         getSelector(steps.first())
@@ -398,6 +454,12 @@ open class IBaseModel(
             }
         }
         checkFilled = false
+    }
+
+    fun isCorrectInput(sel: BaseSelector, newValue: String, prevValue: String): Boolean {
+        return findPropBySel(sel)?.run {
+            comporator.isEqual(this, newValue, prevValue)
+        } ?: (newValue == prevValue)
     }
 
     private fun getSelector(action: InputAction): BaseSelector {
@@ -689,10 +751,18 @@ open class IBaseModel(
         }
     }
 
+    val hasValidationError: Boolean
+        get() {
+            return mappings.filterValues {
+                it is IFormInput && it.isValidationError()
+            }.isNotEmpty()
+        }
+
     fun fixValidationError(correctModel: IBaseModel) {
         mappings.forEach { prop, sel ->
             if(sel is IFormInput) {
                 if(sel.isValidationError()) {
+                    sel.isValidationError()
                     correctModel.fill(prop)
                     //Log.info("$sel is invalid")
                 }
@@ -774,9 +844,9 @@ open class IBaseModel(
                                 sel.selectAny()
                             } else if (sel is IFormInput) {
                                 if(new.isEmpty()) {
-                                    sel.clear()
+                                    sel.clear(this@IBaseModel)
                                 } else {
-                                    sel.input(new)
+                                    sel.input(new, this@IBaseModel)
                                 }
                             } else {
                                 sel.input(new)
@@ -836,7 +906,7 @@ open class IBaseModel(
                         if(sel is IFormSelect && new.isEmpty()) {
                             sel.selectAny()
                         } else if (sel is IFormInput) {
-                            sel.input(new)
+                            sel.input(new, this@IBaseModel)
                         } else {
                             sel.text(new).click()
                         }
@@ -907,7 +977,7 @@ open class IBaseModel(
         try {
             prop.setter.call(parent, value)
         }catch (e: Exception) {
-            Thread.sleep(300)
+            wait(300.ms, "short delay in setter of model")
             prop.setter.call(parent, value)
         }
     }
@@ -1029,12 +1099,12 @@ fun <T : IBaseModel> T.clone() :T {
 val <T : IBaseModel> T.modelFromUi :T
     get() {
         return runInModel {
-            val model = if(this.view is IModelBlock<*>) (this.view as IModelBlock<*>).getFromUi() else this
-            clone(model).readFromUI() as T
+            val model = if(this.view is IModelBlock<*>) (this.view).getFromUi() else this.newInstance()
+            model.readFromUI() as T
         }
     }
 
-private inline fun <reified T: Any?> safeTry(l: () -> T?): T? {
+inline fun <reified T: Any?> safeTry(l: () -> T?): T? {
     return try {
         l()
     } catch (e: Exception) {
@@ -1042,4 +1112,18 @@ private inline fun <reified T: Any?> safeTry(l: () -> T?): T? {
     }
 }
 
+fun<T: IBaseModel> T.default(lambda: (T.()->Unit)?=null): T {
+    runInModel {
+        setDefaultValues()
+        lambda?.let {
+            lambda()
+        }
+    }
+    isInitialized = true
+    return this
+}
 
+val <T: IBaseModel> T.default: T
+    get() = newInstance().apply {
+        setDefaultValues()
+    }

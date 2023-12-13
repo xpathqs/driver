@@ -9,6 +9,7 @@ import org.xpathqs.driver.actions.MakeVisibleAction
 import org.xpathqs.driver.actions.SelectorInteractionAction
 import org.xpathqs.driver.actions.WaitAction
 import org.xpathqs.driver.extensions.isHidden
+import org.xpathqs.driver.extensions.wait
 import org.xpathqs.driver.extensions.waitForFirstVisibleOf
 import org.xpathqs.driver.widgets.IFormInput
 import java.time.Duration
@@ -41,6 +42,7 @@ interface IExecutor {
     fun processBeforeActionExtensions(action: IAction) {
         if(action is SelectorInteractionAction && action !is WaitAction && action !is MakeVisibleAction) {
             if(action.beforeActionDelay != Duration.ZERO) {
+                wait(action.beforeActionDelay, "beforeAction delay")
                 Thread.sleep(action.beforeActionDelay.toMillis())
             }
 

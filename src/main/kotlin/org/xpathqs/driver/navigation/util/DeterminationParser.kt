@@ -58,7 +58,9 @@ class DeterminationParser(
             })
         }
 
-        val e = exist.distinctBy { it.name }.filter {
+        val e = exist.distinctBy {
+            it.name
+        }.filter {
             (it doesNotChildOf hidden) && isStaticSelector(it)
         }
 

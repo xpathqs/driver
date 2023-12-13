@@ -3,7 +3,7 @@ package org.xpathqs.driver.cache.evaluator
 import org.w3c.dom.Document
 import org.w3c.dom.Node
 import org.w3c.dom.NodeList
-import org.xpathqs.driver.log.Log
+import org.xpathqs.log.Log
 import javax.xml.xpath.XPathConstants
 import javax.xml.xpath.XPathFactory
 

@@ -6,7 +6,7 @@ interface IDriver {
     fun click(x: Int, y: Int)
 
     fun click(selector: ISelector)
-    fun clear(selector: ISelector)
+    fun clear(selector: ISelector, clickSelector: ISelector)
     fun input(selector: ISelector, value: String)
 
     val pageSource: String

@@ -1,5 +1,6 @@
 package org.xpathqs.driver.navigation.util
 
+import org.xpathqs.core.selector.base.findAnnotations
 import org.xpathqs.core.selector.base.hasAnnotation
 import org.xpathqs.core.selector.block.Block
 import org.xpathqs.core.selector.block.allInnerSelectorBlocks
@@ -11,6 +12,8 @@ import org.xpathqs.driver.executor.CachedExecutor
 import org.xpathqs.driver.executor.Decorator
 import org.xpathqs.driver.extensions.click
 import org.xpathqs.driver.extensions.makeVisible
+import org.xpathqs.driver.extensions.ms
+import org.xpathqs.driver.extensions.wait
 import org.xpathqs.driver.navigation.NavExecutor
 import org.xpathqs.driver.navigation.annotations.UI
 import org.xpathqs.driver.navigation.annotations.UI.Visibility.Companion.UNDEF_STATE
@@ -22,7 +25,7 @@ import org.xpathqs.driver.page.Page
 import java.time.Duration
 import kotlin.reflect.full.findAnnotations
 import kotlin.reflect.full.memberFunctions
-import kotlin.reflect.jvm.kotlinProperty
+import kotlin.reflect.jvm.javaMethod
 
 class NavigationParser(
     private val page: INavigable
@@ -31,18 +34,29 @@ class NavigationParser(
     fun parse() {
         page as Block
 
-        page::class.memberFunctions.forEach { m ->
-            val methods = m.annotations.filterIsInstance<UI.Nav.PathTo>()
-            if(methods.isNotEmpty()) {
-                val ann = methods.first()
-                if(ann.byInvoke != Block::class) {
-                    page.addNavigation(
-                        to = ann.byInvoke.objectInstance!! as INavigable,
-                        state = ann.pageState,
-                        selfState = ann.selfPageState,
-                        globalState = ann.globalState
-                    ) {
-                        m.call(page)
+        val methods = (page.allInnerSelectorBlocks + page).flatMap {
+            it::class.memberFunctions
+        }.filter {
+            it.annotations.filterIsInstance<UI.Nav.PathTo>().isNotEmpty()
+        }
+
+        if(methods.isNotEmpty()) {
+            methods.forEach {
+                it.annotations.filterIsInstance<UI.Nav.PathTo>().forEach { ann ->
+                    if(ann.byInvoke != Block::class) {
+                        page.addNavigation(
+                            to = ann.byInvoke.objectInstance!! as INavigable,
+                            state = ann.pageState,
+                            selfState = ann.selfPageState,
+                            globalState = ann.globalState
+                        ) {
+                            it.call(it.javaMethod!!.declaringClass.kotlin.objectInstance)
+                            if (ann.switchTab) {
+                                Global.executor.execute(
+                                    SwitchTabAction()
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -54,7 +68,9 @@ class NavigationParser(
             it.hasAnnotation(UI.Nav.PathTo::class)
         }
         selectors.forEach {
-            it.property?.findAnnotations<UI.Nav.PathTo>()?.forEach { ann ->
+            val pathToAnnotations = it.property?.findAnnotations<UI.Nav.PathTo>()
+                ?: it.findAnnotations()
+            pathToAnnotations?.forEach { ann ->
            // it.annotations.forEach { ann ->
                // if(ann is UI.Nav.PathTo) {
                     if (ann.byClick != Block::class) {
@@ -83,46 +99,46 @@ class NavigationParser(
             }
         }
 
-        page::class.findAnnotations<UI.Nav.PathTo>().forEach { it ->
+        page::class.findAnnotations<UI.Nav.PathTo>().forEach { pathTo ->
             //Add navigation for the "Contains" blocks, which are already present on the page
             //Executor should do nothing, this edge is for JGraph only
             try {
                // it.contains.forEach { cls ->
-                if(it.contain != Block::class) {
-                    val cls = it.contain
+                if(pathTo.contain != Block::class) {
+                    val cls = pathTo.contain
                     val obj = cls.objectInstance!! as INavigable
-                    val weight = if(it.weight != UI.Nav.PathTo.UNDEF) it.weight else UI.Nav.PathTo.ALREADY_PRESENT_WEIGHT
+                    val weight = if(pathTo.weight != UI.Nav.PathTo.UNDEF) pathTo.weight else UI.Nav.PathTo.ALREADY_PRESENT_WEIGHT
                     //val state = (page.findAnnotation<UI.Nav.Config>())?.defaultState ?: UNDEF_STATE
 
                     page.addNavigation(
                         obj,
                         weight = weight,
-                        state = it.pageState,
-                        selfState = it.pageState,
-                        globalState = it.globalState
+                        state = pathTo.pageState,
+                        selfState = pathTo.pageState,
+                        globalState = pathTo.globalState
                     )
 
                 }
             } catch(e: Error) {}
 
-            if(it.bySubmit != Block::class) {
-                val obj = it.bySubmit.objectInstance!! as INavigable
-                val weight = if(it.weight != UI.Nav.PathTo.UNDEF ) it.weight else UI.Nav.PathTo.DEFAULT_WEIGHT
+            if(pathTo.bySubmit != Block::class) {
+                val obj = pathTo.bySubmit.objectInstance!! as INavigable
+                val weight = if(pathTo.weight != UI.Nav.PathTo.UNDEF ) pathTo.weight else UI.Nav.PathTo.DEFAULT_WEIGHT
 
                 page.addNavigation(
                     to = obj,
                     weight = weight,
-                    selfState = it.selfPageState,
-                    state = it.pageState,
-                    globalState = it.globalState
+                    selfState = pathTo.selfPageState,
+                    state = pathTo.pageState,
+                    globalState = pathTo.globalState
                 ) {
                     val model =
-                        if(it.pageState != UI.Nav.PathTo.UNDEF) {
-                            val state = if(it.modelState != UNDEF_STATE) it.modelState else it.pageState
+                        if(pathTo.pageState != UI.Nav.PathTo.UNDEF) {
+                            val state = if(pathTo.modelState != UNDEF_STATE) pathTo.modelState else pathTo.pageState
                             page.model?.states?.get(state)
                         } else {
-                            if(it.modelState != UNDEF_STATE) {
-                                page.model?.states?.get(it.modelState)
+                            if(pathTo.modelState != UNDEF_STATE) {
+                                page.model?.states?.get(pathTo.modelState)
                             } else {
                                 page.model
                             }
@@ -131,17 +147,28 @@ class NavigationParser(
                     model?.submit(page) ?:
                         throw XPathQsException.NoModelForThePage(page as Page)
 
+                    if (pathTo.switchTab) {
+                        Global.executor.execute(
+                            SwitchTabAction()
+                        )
+                    }
+
                     obj as ILoadable
                     obj.waitForLoad(Duration.ofSeconds(30))
 
-                    if(obj is IPageState && it.pageState != UI.Nav.PathTo.UNDEF) {
+                    if(obj is IPageState && pathTo.pageState != UI.Nav.PathTo.UNDEF) {
 
-                        while (obj.pageState != it.pageState) {
-                            Thread.sleep(500)
+                        var iterations = 0
+                        while (obj.pageState != pathTo.pageState && iterations < 5) {
+                            wait(500.ms, "delay in LoadingParser for states")
                             (Global.executor as Decorator).findOriginInstance<CachedExecutor>()?.refreshCache() ?: break
+                            iterations++
                         }
 
-                        println("State updated")
+                        if(iterations == 5) {
+                            throw XPathQsException.IncorrectPageState(page as Page, pathTo.pageState)
+                        }
+
                     }
                 }
             }

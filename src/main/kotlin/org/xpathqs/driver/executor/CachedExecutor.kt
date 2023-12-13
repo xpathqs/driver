@@ -9,15 +9,23 @@ import org.xpathqs.driver.constants.Global
 import org.xpathqs.driver.extensions.count
 import org.xpathqs.driver.extensions.isHidden
 import org.xpathqs.driver.extensions.isVisible
-import org.xpathqs.driver.log.Log
+import org.xpathqs.log.Log
+import org.xpathqs.driver.log.action
+import org.xpathqs.driver.log.xpath
+import org.xpathqs.driver.navigation.Navigator
+import org.xpathqs.driver.navigation.base.INavigator
 import java.time.Duration
 
 open class CachedExecutor(
     origin: IExecutor,
-    val cache: ICache
+    val cache: ICache,
+    var nav: INavigator? = null
 ) : Decorator(origin) {
 
     private var needRefreshCache = true
+
+    val actual: Boolean
+        get() = !needRefreshCache
 
     private val actionHandlerCache = ActionExecMap().apply {
         set(WaitForSelectorAction(Selector()).name) {
@@ -45,6 +53,9 @@ open class CachedExecutor(
     open fun refreshCache() {
         Log.action("Trigger Cache refresh") {
             cache.update(driver.pageSource)
+            if(nav is Navigator && nav != null) {
+                (nav as Navigator).prevCurrentPage = null
+            }
             needRefreshCache = false
         }
     }

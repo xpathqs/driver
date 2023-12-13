@@ -5,11 +5,13 @@ import org.xpathqs.core.selector.base.ISelector
 import org.xpathqs.core.selector.base.findAnnotation
 import org.xpathqs.core.selector.base.hasAnnotation
 import org.xpathqs.core.selector.block.Block
-import org.xpathqs.core.selector.block.allInnerSelectors
+import org.xpathqs.core.selector.block.findAllWithAnnotation
 import org.xpathqs.core.selector.block.findWithAnnotation
 import org.xpathqs.core.selector.extensions.parents
 import org.xpathqs.driver.exceptions.XPathQsException
 import org.xpathqs.driver.extensions.*
+import org.xpathqs.driver.model.IBaseModel
+import org.xpathqs.log.Log
 import org.xpathqs.driver.navigation.Edge
 import org.xpathqs.driver.navigation.NavWrapper
 import org.xpathqs.driver.navigation.Navigator
@@ -27,14 +29,15 @@ open class Navigable(
         = ModelStateSelectorNavigation(
             ModelStateParentNavigation(
                 FormSelectorSelectOptionNavigation(
-                    //FormSelectorValidationErrorNavigation(
-                            CheckBoxNavigation(
-                                CheckBoxLinkedNavigation(
-                                    SelectableNavigation(
-                                        ClickToBackNavigation(
-                                            InternalPageStateNavigation(
-                                                VisibilityMapInputNavigation(
-                                                    LinkedVisibilityNavigation(
+                    CheckBoxNavigation(
+                        CheckBoxLinkedNavigation(
+                            SelectableNavigation(
+                                ClickToBackNavigation(
+                                    InternalPageStateNavigation(
+                                        VisibilityMapInputNavigation(
+                                            VisibleWhenNavigation(
+                                                LinkedVisibilityNavigation(
+                                                    FillToMakeVisibleOfNavigation(
                                                         TriggerModelNavigation(
                                                             BlockSelectorNavigationImpl()
                                                         )
@@ -45,7 +48,8 @@ open class Navigable(
                                     )
                                 )
                             )
-                   // )
+                        )
+                    )
                 )
             )
         )
@@ -67,7 +71,7 @@ open class Navigable(
             )
         )
 
-        val targetPage = to as? Block
+        /*val targetPage = to as? Block
         targetPage?.let { page ->
             page.allInnerSelectors.firstOrNull {
                 it.hasAnnotation(UI.Widgets.Back::class)
@@ -83,23 +87,36 @@ open class Navigable(
                     )
                 )
             }
-        }
+        }*/
     }
 
-    override fun navigate(elem: ISelector, navigator: INavigator) {
+    override fun navigate(elem: ISelector, navigator: INavigator, model: IBaseModel) {
         (elem as? BaseSelector)?.parents?.let { parents ->
             parents.reversed().forEach { parent ->
                 if(parent.name.isNotEmpty()
                     && parent.xpath.isNotEmpty()
                     && parent.isHidden
                 ) {
-                    selectorNavigator.navigate(parent, navigator)
+                    selectorNavigator.navigate(parent, navigator, model)
+                    if(parent.isHidden) {
+                        Log.error("Navigation to the $parent was not completed")
+                    }
                 }
             }
         }
+
         if((elem as? BaseSelector)?.isHidden == true) {
-            selectorNavigator.navigate(elem, navigator)
+            (elem as? BaseSelector)?.parents?.filterIsInstance<ISelectorNav>()?.forEach {
+                it.navigateDirectly(elem)
+                if(elem.isVisible) {
+                    return
+                }
+            }
         }
+
+       /* if((elem as? BaseSelector)?.isHidden == true) {
+            selectorNavigator.navigate(elem, navigator)
+        }*/
     }
 
     override fun navigate(state: Int) {
@@ -126,7 +143,11 @@ open class Navigable(
                 } else state
 
                 if((currentPage as Block).hasAnnotation(UI.Nav.Autoclose::class)) {
-                    currentPage.findWithAnnotation(UI.Widgets.ClickToClose::class)?.click()
+                    currentPage.findAllWithAnnotation(UI.Widgets.ClickToFocusLost::class).forEach {
+                        if(it.isVisible) {
+                            it.click()
+                        }
+                    }
                     currentPage.waitForDisappear(
                         Duration.ofSeconds(2)
                     )
@@ -135,10 +156,42 @@ open class Navigable(
                     }
                     navigate(state)
                 } else {
-                    navigator.navigate(
-                        NavWrapper.get(currentPage, currentState),
-                        NavWrapper.get(this.block, navState)
-                    )
+                    var from = NavWrapper.get(currentPage, currentState)
+                    var to = NavWrapper.get(this.block, navState)
+                    try {
+                        navigator.navigate(
+                            from,
+                            to
+                        )
+                    } catch (e: XPathQsException.NoNavigation) {
+                        currentPage.findWithAnnotation(UI.Widgets.Back::class)?.let { backButton ->
+                            Log.info("Trying to navigate via back button")
+
+                            var cp = currentPage
+                            var bb = backButton
+                            var cs = currentState
+
+                            while(navigator.findPath(from, to) == null) {
+                                cp as Block
+                                bb.click()
+                                cp.waitForDisappear()
+
+                                cp = navigator.waitForCurrentPage()
+                                val cs = if(cp is IPageState) {
+                                    cp.pageState
+                                } else {
+                                    (this.block.findAnnotation<UI.Nav.Config>())?.defaultState ?: UNDEF_STATE
+                                }
+                                from = NavWrapper.get(cp, cs)
+                                bb = (cp as Block).findWithAnnotation(UI.Widgets.Back::class) ?: break
+                            }
+
+                            navigator.navigate(
+                                from,
+                                to
+                            )
+                        }
+                    }
                 }
             } catch (e : XPathQsException.NoNavigation) {
                 this.block.findWithAnnotation(UI.Nav.DeterminateBy::class)?.makeVisible()
